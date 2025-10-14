@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garissa County Project Monitoring Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js for GIS Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Chart.js for Data Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide-icons@0.378.0/dist/lucide.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="Garissa_logo.png">
+</head>
+<body class="flex h-screen overflow-hidden">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex flex-col items-center justify-center z-50">
+        <div class="text-center">
+            <img src="Garissa_logo.png" alt="Garissa County Logo" class="w-20 h-20 mx-auto mb-4 rounded-full animate-pulse">
+            <svg class="animate-spin h-10 w-10 text-white mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-white text-lg font-semibold">Initializing Garissa County PMD...</p>
+            <p class="text-gray-300 text-sm mt-2">Loading system components</p>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-900 via-red-800 to-green-800 hidden">
+        <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl">
+            <div class="flex justify-center mb-6">
+                <img src="Garissa_logo.png" alt="Garissa County Logo" class="w-24 h-24 rounded-full border-4 border-red-800 shadow-lg">
+            </div>
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Project Monitoring Dashboard</h1>
+            <p class="text-center text-gray-600 mb-8 font-medium">Garissa County Government</p>
+            
+            <!-- Login Tabs -->
+            <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
+                <button id="gmail-tab" class="flex-1 py-2 px-4 text-sm font-medium rounded-md bg-white text-red-800 shadow-sm transition-all duration-200">
+                    Gmail Login
+                </button>
+                <button id="upn-tab" class="flex-1 py-2 px-4 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 transition-all duration-200">
+                    UPN Login
+                </button>
+            </div>
+
+            <!-- Gmail Login Form -->
+            <form id="gmail-login-form" class="login-form">
+                <div class="text-center mb-6">
+                    <button type="button" id="google-signin-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-500">Or sign in with your Gmail account</p>
+                </div>
+            </form>
+
+            <!-- UPN Login Form -->
+            <form id="upn-login-form" class="login-form hidden">
+                <div class="mb-4">
+                    <label for="upn" class="block text-gray-700 text-sm font-bold mb-2">Unique Personal Number (UPN)</label>
+                    <input type="text" id="upn" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-red-800" placeholder="e.g., 123456789" pattern="[0-9]+" required>
+                    <p class="text-xs text-gray-500 mt-1">Enter your 9-digit UPN number</p>
+                </div>
+                <div class="mb-6">
+                    <label for="upn-password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="upn-password" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-red-800" required>
+                </div>
+                <button type="submit" class="btn-primary font-bold py-3 px-6 rounded-lg w-full focus:outline-none focus:shadow-outline">
+                    Sign In with UPN
+                </button>
+                <div class="text-center mt-4">
+                    <p class="text-xs text-gray-500">
+                        Default Admin: UPN: 123456789, Password: Admin.123!
+                    </p>
+                </div>
+            </form>
+            
+            <p id="login-error" class="text-red-500 text-xs italic mt-4 text-center"></p>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app" class="flex w-full h-full hidden">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 text-white flex-shrink-0 p-4 space-y-2">
+            <div class="flex items-center mb-8">
+                <img src="Garissa_logo.png" alt="Garissa County Logo" class="w-12 h-12 rounded-full mr-3 border-2 border-white">
+                <div>
+                    <h1 class="text-lg font-bold">Garissa PMD</h1>
+                    <p class="text-xs text-gray-300">Project Monitoring</p>
+                </div>
+            </div>
+            
+            <nav class="flex flex-col space-y-1">
+                <a href="#" id="nav-dashboard" class="sidebar-link active flex items-center py-2.5 px-4 rounded-lg">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard
+                </a>
+                <a href="#" id="nav-projects" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg">
+                    <i data-lucide="folder-kanban" class="w-5 h-5 mr-3"></i> Projects
+                </a>
+                <a href="#" id="nav-users" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hidden">
+                    <i data-lucide="users" class="w-5 h-5 mr-3"></i> User Management
+                </a>
+                <a href="#" id="nav-reports" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg">
+                    <i data-lucide="file-line-chart" class="w-5 h-5 mr-3"></i> AI Reports
+                </a>
+                <a href="#" id="nav-analytics" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i> Analytics
+                </a>
+            </nav>
+            
+            <div class="absolute bottom-4 left-4 w-56">
+                <div class="text-sm text-gray-400 mb-2" id="user-info">
+                    <p class="font-bold text-white" id="user-name-display"></p>
+                    <p id="user-email-display"></p>
+                    <p class="text-xs" id="user-role-display"></p>
+                </div>
+                <button id="logout-button" class="w-full flex items-center justify-center text-red-400 hover:bg-red-800 hover:text-white py-2 px-4 rounded-lg transition-colors">
+                    <i data-lucide="log-out" class="w-5 h-5 mr-2"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <div class="p-6 overflow-y-auto">
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="page-view">
+                    <div class="flex items-center mb-6">
+                        <img src="Garissa_logo.png" alt="County Logo" class="w-12 h-12 rounded-full mr-4 border-2 border-red-800">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">Dashboard Overview</h2>
+                            <p class="text-gray-600">Real-time project monitoring for Garissa County</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="card p-5 flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-800 mr-4">
+                                <i data-lucide="archive" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total Projects</p>
+                                <p id="total-projects-stat" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="card p-5 flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 text-green-800 mr-4">
+                                <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Completed</p>
+                                <p id="completed-projects-stat" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="card p-5 flex items-center">
+                            <div class="p-3 rounded-full bg-yellow-100 text-yellow-800 mr-4">
+                                <i data-lucide="loader" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Ongoing</p>
+                                <p id="ongoing-projects-stat" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="card p-5 flex items-center">
+                            <div class="p-3 rounded-full bg-red-100 text-red-800 mr-4">
+                                <i data-lucide="alert-circle" class="w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Stalled</p>
+                                <p id="stalled-projects-stat" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts & Map -->
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        <div class="lg:col-span-3 card p-6">
+                            <div class="flex items-center mb-4">
+                                <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-2">
+                                <h3 class="text-xl font-semibold text-gray-700">Projects GIS Location</h3>
+                            </div>
+                            <div id="map" class="rounded-lg"></div>
+                        </div>
+                        <div class="lg:col-span-2 card p-6">
+                            <div class="flex items-center mb-4">
+                                <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-2">
+                                <h3 class="text-xl font-semibold text-gray-700">Projects by Department</h3>
+                            </div>
+                            <canvas id="department-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects View -->
+                <div id="view-projects" class="page-view hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <img src="Garissa_logo.png" alt="County Logo" class="w-12 h-12 rounded-full mr-4 border-2 border-red-800">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800">Project Management</h2>
+                                <p class="text-gray-600">Manage all development projects across Garissa County</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="flex items-center border rounded-lg">
+                                <label for="csv-upload-input" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-l-lg flex items-center">
+                                    <i data-lucide="upload" class="w-4 h-4 mr-2"></i> Bulk Upload
+                                </label>
+                                <input type="file" id="csv-upload-input" accept=".csv" class="hidden">
+                            </div>
+                            <button id="add-project-btn" class="btn-primary font-bold py-2 px-4 rounded-lg flex items-center">
+                                <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Add New Project
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="mb-4 flex space-x-4">
+                        <input type="text" id="project-search" placeholder="Search projects..." class="w-1/3 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-800">
+                        <select id="department-filter" class="w-1/4 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-800">
+                            <option value="">All Departments</option>
+                        </select>
+                        <select id="status-filter" class="w-1/4 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-800">
+                            <option value="">All Statuses</option>
+                            <option value="Ongoing">Ongoing</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Stalled">Stalled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="table-container">
+                        <div class="overflow-x-auto">
+                            <table class="w-full whitespace-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th>Project Name</th>
+                                        <th>Department</th>
+                                        <th>Ward</th>
+                                        <th>Budget (KSh)</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projects-table-body">
+                                    <!-- JS will populate this -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management View -->
+                <div id="view-users" class="page-view hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <img src="Garissa_logo.png" alt="County Logo" class="w-12 h-12 rounded-full mr-4 border-2 border-red-800">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800">User Management</h2>
+                                <p class="text-gray-600">Manage system access and permissions</p>
+                            </div>
+                        </div>
+                        <button id="add-user-btn" class="btn-primary font-bold py-2 px-4 rounded-lg flex items-center">
+                            <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Add New User
+                        </button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <div class="overflow-x-auto">
+                            <table class="w-full whitespace-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th>Email/UPN</th>
+                                        <th>Department</th>
+                                        <th>Role</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <!-- JS will populate this -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Reports View -->
+                <div id="view-reports" class="page-view hidden">
+                    <div class="flex items-center mb-6">
+                        <img src="Garissa_logo.png" alt="County Logo" class="w-12 h-12 rounded-full mr-4 border-2 border-red-800">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">AI Powered Reports</h2>
+                            <p class="text-gray-600">Generate intelligent insights using Gemini AI</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <div class="flex items-center mb-4">
+                            <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-2">
+                            <h3 class="text-xl font-semibold text-gray-700">Smart Analytics</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            Leverage Gemini AI to analyze your project data. Ask for summaries, risk assessments, budget analyses, and more. 
+                            The AI will process all current project data to generate comprehensive insights.
+                        </p>
+                        <div class="mb-4">
+                            <label for="ai-prompt" class="block text-gray-700 text-sm font-bold mb-2">Your Request:</label>
+                            <textarea id="ai-prompt" rows="3" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-red-800" placeholder="e.g., 'Provide a summary of all stalled projects and suggest potential reasons.' or 'Analyze budget distribution across departments.'"></textarea>
+                        </div>
+                        <button id="generate-report-btn" class="btn-primary font-bold py-2 px-4 rounded-lg flex items-center">
+                            <i data-lucide="sparkles" class="w-5 h-5 mr-2"></i> Generate AI Report
+                        </button>
+                        
+                        <div id="ai-report-output" class="mt-6 hidden">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Generated Report:</h3>
+                            <div id="ai-spinner" class="flex items-center justify-center hidden my-4">
+                                <svg class="animate-spin h-8 w-8 text-red-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <p class="ml-2 text-gray-600">Generating report... this may take a moment.</p>
+                            </div>
+                            <div id="ai-report-content" class="p-4 border rounded-lg bg-gray-50 text-gray-800 whitespace-pre-wrap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics View -->
+                <div id="view-analytics" class="page-view hidden">
+                    <div class="flex items-center mb-6">
+                        <img src="Garissa_logo.png" alt="County Logo" class="w-12 h-12 rounded-full mr-4 border-2 border-red-800">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">Advanced Analytics</h2>
+                            <p class="text-gray-600">Comprehensive project analysis and reporting</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="card p-6">
+                            <div class="flex items-center mb-4">
+                                <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-2">
+                                <h3 class="text-xl font-semibold text-gray-700">Budget Analysis</h3>
+                            </div>
+                            <canvas id="budget-chart"></canvas>
+                        </div>
+                        <div class="card p-6">
+                            <div class="flex items-center mb-4">
+                                <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-2">
+                                <h3 class="text-xl font-semibold text-gray-700">Timeline Analysis</h3>
+                            </div>
+                            <canvas id="timeline-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    <!-- Project Form Modal -->
+    <div id="project-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 hidden z-40">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-full overflow-y-auto">
+            <div class="p-6 border-b bg-gradient-to-r from-red-800 to-green-800 text-white rounded-t-lg">
+                <div class="flex items-center">
+                    <img src="Garissa_logo.png" alt="Logo" class="w-10 h-10 rounded-full mr-3 border-2 border-white">
+                    <h3 id="project-modal-title" class="text-2xl font-bold">Add New Project</h3>
+                </div>
+            </div>
+            <form id="project-form" class="p-6">
+                <input type="hidden" id="project-id">
+                <!-- Form content will be populated by JS -->
+                <div id="project-form-content">
+                    <!-- Dynamic form content -->
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- User Form Modal -->
+    <div id="user-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 hidden z-40">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b bg-gradient-to-r from-red-800 to-green-800 text-white rounded-t-lg">
+                <div class="flex items-center">
+                    <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-3 border-2 border-white">
+                    <h3 id="user-modal-title" class="text-2xl font-bold">Add New User</h3>
+                </div>
+            </div>
+            <form id="user-form" class="p-6">
+                <input type="hidden" id="user-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <input type="email" id="user-form-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500" required>
+                    </div>
+                    <div id="password-field-container">
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="user-form-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Department</label>
+                        <select id="user-form-department" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500" required></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Role</label>
+                        <select id="user-form-role" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500" required>
+                            <option value="admin">Admin</option>
+                            <option value="superadmin">Super Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-6 bg-gray-50 -m-6 mt-6 flex justify-end space-x-3 rounded-b-lg">
+                    <button type="button" id="cancel-user-form" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="submit" class="btn-primary font-bold py-2 px-4 rounded-lg">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm">
+            <div id="alert-header" class="p-4 border-b rounded-t-lg">
+                <div class="flex items-center">
+                    <img src="Garissa_logo.png" alt="Logo" class="w-8 h-8 rounded-full mr-3">
+                    <h3 id="alert-title" class="text-xl font-bold">Alert</h3>
+                </div>
+            </div>
+            <div class="p-6">
+                <p id="alert-message"></p>
+            </div>
+            <div class="p-4 bg-gray-50 flex justify-end space-x-2 rounded-b-lg">
+                <button id="alert-ok" class="btn-primary font-bold py-2 px-4 rounded-lg">OK</button>
+                <button id="alert-cancel" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hidden">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="excel-engine.js"></script>
+    <script type="module" src="dummy-data.js"></script>
+    <script type="module" src="enhanced-app.js"></script>
+    
+    <!-- Google Charts API for Looker Studio integration -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    
+    <!-- Google Sheets API -->
+    <script src="https://apis.google.com/js/api.js"></script>
+</body>
+</html>
+

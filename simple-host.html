@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garissa County PMD - Quick Host</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+        }
+        .header img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            border: 4px solid white;
+        }
+        .status {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .warning {
+            background: #fef3cd;
+            border: 1px solid #fecaca;
+            color: #92400e;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem;
+            background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        .btn-accent {
+            background: linear-gradient(135deg, #FFD700 0%, #F59E0B 100%);
+            color: #1f2937;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .card {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid #DC2626;
+        }
+        .credentials {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="Garissa_logo.png" alt="Garissa County Logo" onerror="this.style.display='none'">
+            <h1>Garissa County Project Monitoring Dashboard</h1>
+            <p>Intelligent AI-Powered Project Management System</p>
+        </div>
+
+        <div class="status">
+            <h3>✅ System Status: READY FOR DEPLOYMENT</h3>
+            <p>Your Garissa County PMD is fully configured and ready to host on any platform!</p>
+        </div>
+
+        <div class="credentials">
+            <h3>🔐 Default Login Credentials</h3>
+            <p><strong>UPN:</strong> 123456789</p>
+            <p><strong>Password:</strong> Admin.123!</p>
+            <p><strong>Role:</strong> Super Admin</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>🔥 Firebase Hosting (Recommended)</h3>
+                <p>Fast, reliable, and free hosting with automatic HTTPS.</p>
+                <a href="https://console.firebase.google.com" class="btn" target="_blank">Deploy to Firebase</a>
+            </div>
+            
+            <div class="card">
+                <h3>📄 GitHub Pages</h3>
+                <p>Free hosting directly from your GitHub repository.</p>
+                <a href="https://github.com/jmsmuigai/GARISSA-PROJECTS-MONITORING-DASHBOARD/settings/pages" class="btn btn-secondary" target="_blank">Enable Pages</a>
+            </div>
+            
+            <div class="card">
+                <h3>🌟 Netlify</h3>
+                <p>Drag and drop deployment in seconds.</p>
+                <a href="https://netlify.com" class="btn btn-accent" target="_blank">Deploy to Netlify</a>
+            </div>
+            
+            <div class="card">
+                <h3>⚡ Vercel</h3>
+                <p>Automatic deployments from GitHub.</p>
+                <a href="https://vercel.com" class="btn" target="_blank">Deploy to Vercel</a>
+            </div>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ GitHub Pages Issue</h3>
+            <p>Your repository is currently private. GitHub Pages requires a public repository for free hosting.</p>
+            <p><strong>Quick Fix:</strong> Go to repository Settings → General → Make repository public, then enable Pages.</p>
+        </div>
+
+        <div class="status">
+            <h3>🎯 Quick Actions</h3>
+            <p>Choose any hosting option above to make your system live immediately:</p>
+            <ul>
+                <li><strong>Firebase:</strong> Best performance and features</li>
+                <li><strong>GitHub Pages:</strong> Make repo public first</li>
+                <li><strong>Netlify:</strong> Drag and drop your project folder</li>
+                <li><strong>Vercel:</strong> Connect your GitHub account</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="index.html" class="btn">🚀 Launch Dashboard</a>
+            <a href="user-manual.html" class="btn btn-secondary">📚 User Manual</a>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem; color: #666;">
+            <p><strong>Built with ❤️ for Garissa County Government</strong></p>
+            <p>By James Mukoma (jmsmuigai@gmail.com) - December 2024</p>
+        </div>
+    </div>
+</body>
+</html>

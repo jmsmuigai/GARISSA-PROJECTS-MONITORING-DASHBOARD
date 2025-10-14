@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garissa County PMD - User Manual</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+        }
+        .header img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            border: 4px solid white;
+        }
+        .section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #DC2626;
+        }
+        .section h2 {
+            color: #DC2626;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+            padding-left: 2rem;
+        }
+        .feature-list li:before {
+            content: "✅";
+            position: absolute;
+            left: 0;
+            color: #059669;
+        }
+        .credentials {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+        }
+        .credentials h3 {
+            margin-top: 0;
+            color: white;
+        }
+        .download-btn {
+            background: linear-gradient(135deg, #FFD700 0%, #F59E0B 100%);
+            color: #1f2937;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+            display: block;
+            margin: 2rem auto;
+            text-decoration: none;
+            text-align: center;
+            max-width: 300px;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+        }
+        .back-btn {
+            background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+        .back-btn:hover {
+            background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%);
+            transform: translateY(-1px);
+        }
+        .screenshot {
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #e0e0e0;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .warning {
+            background: #fef3cd;
+            border: 1px solid #fecaca;
+            color: #92400e;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+    
+    <div class="header">
+        <img src="Garissa_logo.png" alt="Garissa County Logo">
+        <h1>Garissa County Project Monitoring Dashboard</h1>
+        <p>Comprehensive User Manual & Guide</p>
+    </div>
+
+    <div class="section">
+        <h2>🚀 Quick Start Guide</h2>
+        <p>Welcome to the Garissa County Project Monitoring Dashboard! This intelligent, AI-powered system is designed to revolutionize project management across Garissa County.</p>
+        
+        <div class="credentials">
+            <h3>🔐 Default Login Credentials</h3>
+            <p><strong>UPN:</strong> 123456789</p>
+            <p><strong>Password:</strong> Admin.123!</p>
+            <p><strong>Role:</strong> Super Admin</p>
+            <p><strong>Department:</strong> County Executive</p>
+        </div>
+        
+        <div class="success">
+            <strong>✅ Demo Mode Available:</strong> Add <code>?demo=true</code> to the URL for an interactive demonstration of all features.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>✨ Key Features</h2>
+        <ul class="feature-list">
+            <li><strong>Excel-like Functionality:</strong> Complete spreadsheet interface with formula calculations</li>
+            <li><strong>Looker Studio Integration:</strong> Professional business intelligence dashboards</li>
+            <li><strong>AI-Powered Reports:</strong> Natural language queries with Google Gemini Pro</li>
+            <li><strong>Real-time Project Tracking:</strong> Live updates across all users</li>
+            <li><strong>Interactive GIS Mapping:</strong> Project locations on Garissa County map</li>
+            <li><strong>Bulk Data Management:</strong> CSV import/export capabilities</li>
+            <li><strong>Role-based Access Control:</strong> Secure user management</li>
+            <li><strong>Mobile Responsive Design:</strong> Works on all devices</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📊 Dashboard Overview</h2>
+        <p>The main dashboard provides a comprehensive view of all projects across Garissa County:</p>
+        <ul class="feature-list">
+            <li><strong>Project Statistics:</strong> Total, completed, ongoing, and stalled projects</li>
+            <li><strong>Department Performance:</strong> Visual charts showing project distribution</li>
+            <li><strong>GIS Map:</strong> Interactive map with project locations</li>
+            <li><strong>Recent Activities:</strong> Latest project updates and changes</li>
+            <li><strong>Budget Overview:</strong> Financial performance across departments</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📈 Excel-like Functionality</h2>
+        <p>The system includes a powerful spreadsheet interface with Excel-like capabilities:</p>
+        <ul class="feature-list">
+            <li><strong>Formula Engine:</strong> Use formulas like =SUM(A1:A10), =AVERAGE(B1:B5)</li>
+            <li><strong>Custom Functions:</strong> Garissa County specific functions</li>
+            <li><strong>Data Import/Export:</strong> Excel and CSV file support</li>
+            <li><strong>Real-time Calculations:</strong> Automatic formula execution</li>
+            <li><strong>50 Rows x 10 Columns:</strong> Spacious spreadsheet interface</li>
+        </ul>
+        
+        <div class="warning">
+            <strong>💡 Pro Tip:</strong> Try these formulas in the Excel view:
+            <br>• <code>=SUM(A1:A10)</code> - Sum values
+            <br>• <code>=AVERAGE(B1:B5)</code> - Calculate average
+            <br>• <code>=PROJECT_PROGRESS(C1)</code> - Custom Garissa function
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Looker Studio Dashboards</h2>
+        <p>Professional business intelligence dashboards for comprehensive analysis:</p>
+        <ul class="feature-list">
+            <li><strong>Executive Dashboard:</strong> High-level KPIs and performance metrics</li>
+            <li><strong>Department Dashboard:</strong> Performance comparison across departments</li>
+            <li><strong>Financial Dashboard:</strong> Budget analysis and financial performance</li>
+            <li><strong>Operational Dashboard:</strong> Risk assessment and operational metrics</li>
+            <li><strong>Interactive Charts:</strong> Click to drill down and explore data</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🤖 AI-Powered Reports</h2>
+        <p>Ask questions about your data in natural language and get intelligent insights:</p>
+        <ul class="feature-list">
+            <li><strong>Natural Language Queries:</strong> "Show me all stalled projects in Dadaab"</li>
+            <li><strong>Context-aware Analysis:</strong> AI understands Garissa County context</li>
+            <li><strong>Actionable Insights:</strong> Get recommendations and next steps</li>
+            <li><strong>Report Generation:</strong> Automatic PDF and Excel reports</li>
+            <li><strong>Trend Analysis:</strong> Identify patterns and trends in your data</li>
+        </ul>
+        
+        <div class="success">
+            <strong>🎯 Example Queries:</strong>
+            <br>• "Which departments have the highest budget utilization?"
+            <br>• "Show me projects that are behind schedule"
+            <br>• "What are the main risks affecting project completion?"
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🗺️ Garissa County Integration</h2>
+        <p>Complete integration with Garissa County geographical and administrative data:</p>
+        <ul class="feature-list">
+            <li><strong>All 11 Sub-counties:</strong> Complete geographical coverage</li>
+            <li><strong>Ward Mapping:</strong> Detailed ward structure for each sub-county</li>
+            <li><strong>Accurate Coordinates:</strong> Real latitude/longitude data</li>
+            <li><strong>Auto-coordinate Filling:</strong> Smart form behavior</li>
+            <li><strong>Department Structure:</strong> All 10 official departments integrated</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>👥 User Management</h2>
+        <p>Secure user management with role-based access control:</p>
+        <ul class="feature-list">
+            <li><strong>Super Admin:</strong> Full system access and user management</li>
+            <li><strong>Department Admin:</strong> Department-specific project management</li>
+            <li><strong>UPN Authentication:</strong> Secure numeric user identification</li>
+            <li><strong>Gmail OAuth:</strong> Quick login with Google accounts</li>
+            <li><strong>Password Security:</strong> Strong password requirements</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📱 Mobile & Accessibility</h2>
+        <p>The system is fully responsive and accessible on all devices:</p>
+        <ul class="feature-list">
+            <li><strong>Mobile Responsive:</strong> Perfect on phones and tablets</li>
+            <li><strong>Touch Friendly:</strong> Optimized for touch interactions</li>
+            <li><strong>Fast Loading:</strong> Optimized for all connection speeds</li>
+            <li><strong>Cross-browser Support:</strong> Works on all modern browsers</li>
+            <li><strong>Accessibility Features:</strong> Screen reader compatible</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🔧 Technical Support</h2>
+        <p>Need help? We're here to support you:</p>
+        <ul class="feature-list">
+            <li><strong>Email Support:</strong> jmsmuigai@gmail.com</li>
+            <li><strong>Documentation:</strong> Complete guides included</li>
+            <li><strong>Demo System:</strong> Interactive demonstration available</li>
+            <li><strong>Video Tutorials:</strong> Step-by-step guidance</li>
+            <li><strong>Best Practices:</strong> Optimization recommendations</li>
+        </ul>
+    </div>
+
+    <button class="download-btn" onclick="downloadPDF()">
+        📄 Download PDF Manual
+    </button>
+
+    <div class="section">
+        <h2>🎉 Ready to Get Started?</h2>
+        <p>Your Garissa County Project Monitoring Dashboard is ready to revolutionize project management in Garissa County. With its intelligent features, beautiful design, and comprehensive functionality, you have everything needed for successful project tracking and management.</p>
+        
+        <div class="success">
+            <strong>🚀 Quick Actions:</strong>
+            <br>1. Login with the default credentials
+            <br>2. Explore the dashboard and features
+            <br>3. Try the Excel-like functionality
+            <br>4. Test the AI-powered reports
+            <br>5. Import your real project data
+        </div>
+    </div>
+
+    <script>
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.text('Garissa County PMD - User Manual', 20, 30);
+            
+            // Add logo placeholder
+            doc.setFontSize(12);
+            doc.text('Garissa County Project Monitoring Dashboard', 20, 50);
+            doc.text('Comprehensive User Manual & Guide', 20, 60);
+            
+            // Add sections
+            let yPosition = 80;
+            
+            const sections = [
+                {
+                    title: 'Quick Start Guide',
+                    content: [
+                        'Welcome to the Garissa County Project Monitoring Dashboard!',
+                        'Default Login Credentials:',
+                        'UPN: 123456789',
+                        'Password: Admin.123!',
+                        'Role: Super Admin',
+                        'Department: County Executive'
+                    ]
+                },
+                {
+                    title: 'Key Features',
+                    content: [
+                        '• Excel-like Functionality with formula calculations',
+                        '• Looker Studio Integration for professional dashboards',
+                        '• AI-Powered Reports with natural language queries',
+                        '• Real-time Project Tracking with live updates',
+                        '• Interactive GIS Mapping with project locations',
+                        '• Bulk Data Management with CSV import/export',
+                        '• Role-based Access Control for security',
+                        '• Mobile Responsive Design for all devices'
+                    ]
+                },
+                {
+                    title: 'Dashboard Overview',
+                    content: [
+                        'The main dashboard provides:',
+                        '• Project Statistics (total, completed, ongoing, stalled)',
+                        '• Department Performance with visual charts',
+                        '• GIS Map with interactive project locations',
+                        '• Recent Activities and updates',
+                        '• Budget Overview across departments'
+                    ]
+                },
+                {
+                    title: 'Excel-like Functionality',
+                    content: [
+                        'Powerful spreadsheet interface:',
+                        '• Formula Engine: =SUM(A1:A10), =AVERAGE(B1:B5)',
+                        '• Custom Functions for Garissa County',
+                        '• Data Import/Export (Excel and CSV)',
+                        '• Real-time Calculations',
+                        '• 50 Rows x 10 Columns interface'
+                    ]
+                },
+                {
+                    title: 'AI-Powered Reports',
+                    content: [
+                        'Natural language queries:',
+                        '• "Show me all stalled projects in Dadaab"',
+                        '• "Which departments have highest budget utilization?"',
+                        '• "What are the main risks affecting completion?"',
+                        '• Context-aware analysis for Garissa County',
+                        '• Actionable insights and recommendations'
+                    ]
+                },
+                {
+                    title: 'Support',
+                    content: [
+                        'Need help? Contact us:',
+                        'Email: jmsmuigai@gmail.com',
+                        'Complete documentation included',
+                        'Interactive demonstration available',
+                        'Step-by-step video tutorials'
+                    ]
+                }
+            ];
+            
+            sections.forEach(section => {
+                // Check if we need a new page
+                if (yPosition > 250) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                // Add section title
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text(section.title, 20, yPosition);
+                yPosition += 10;
+                
+                // Add section content
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                section.content.forEach(line => {
+                    if (yPosition > 280) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.text(line, 20, yPosition);
+                    yPosition += 6;
+                });
+                yPosition += 10;
+            });
+            
+            // Add footer
+            doc.setFontSize(8);
+            doc.text('Garissa County Project Monitoring Dashboard - User Manual', 20, doc.internal.pageSize.height - 10);
+            doc.text('Generated: ' + new Date().toLocaleDateString(), 20, doc.internal.pageSize.height - 5);
+            
+            // Save the PDF
+            doc.save('Garissa-County-PMD-User-Manual.pdf');
+        }
+    </script>
+</body>
+</html>

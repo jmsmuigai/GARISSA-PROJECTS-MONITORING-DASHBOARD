@@ -483,6 +483,21 @@
         </div>
     </div>
 
+    <!-- Project Detail Modal -->
+    <div id="project-detail-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-red-600 to-green-600 text-white p-6 flex justify-between items-center">
+                <h3 class="text-2xl font-bold">Project Details</h3>
+                <button id="close-project-detail" class="text-white hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1" id="project-detail-content">
+                <!-- Project details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <!-- 3D Logo Animation Styles -->
     <style>
         .logo-3d {
@@ -503,6 +518,7 @@
 
     <!-- Scripts -->
     <script src="languages.js"></script>
+    <script src="database.js"></script>
     <script type="module" src="dashboard-app.js"></script>
     
     <script>

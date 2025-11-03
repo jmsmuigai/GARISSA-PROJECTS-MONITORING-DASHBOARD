@@ -1046,9 +1046,23 @@ function switchTab(tabName) {
         tabContent.classList.remove('hidden');
     }
     
-    // Initialize tab-specific content
-    if (tabName === 'analytics') {
+    // Initialize tab-specific content - ENSURE ALL TABS ARE FUNCTIONAL
+    if (tabName === 'map') {
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+                updateMapMarkers();
+            }
+        }, 100);
+    } else if (tabName === 'list') {
+        // Ensure List View shows all projects
+        renderProjects();
+        console.log(`✅ List View: Displaying ${filteredProjects.length} projects`);
+    } else if (tabName === 'analytics') {
         updateCharts();
+    } else if (tabName === 'reports') {
+        // Reports tab is ready
+        initializeReportViewing();
     }
 }
 

@@ -2006,20 +2006,19 @@ function updateStats() {
     };
     
     // Show total counts from allProjects (not filtered)
-    updateStat('total-projects', allProjects.length);
-    updateStat('completed-projects', allProjects.filter(p => p.status === 'Completed').length);
-    updateStat('ongoing-projects', allProjects.filter(p => p.status === 'Ongoing').length);
-    updateStat('stalled-projects', allProjects.filter(p => p.status === 'Stalled').length);
+    const totalCount = allProjects.length;
+    const completedCount = allProjects.filter(p => p.status === 'Completed').length;
+    const ongoingCount = allProjects.filter(p => p.status === 'Ongoing').length;
+    const stalledCount = allProjects.filter(p => p.status === 'Stalled').length;
     
-    // Also update stats elements that might have different IDs
-    const updateStatById = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value;
-    };
-    updateStatById('total-projects-stat', allProjects.length);
-    updateStatById('completed-projects-stat', allProjects.filter(p => p.status === 'Completed').length);
-    updateStatById('ongoing-projects-stat', allProjects.filter(p => p.status === 'Ongoing').length);
-    updateStatById('stalled-projects-stat', allProjects.filter(p => p.status === 'Stalled').length);
+    // Update all stat elements (support both old and new IDs for compatibility)
+    updateStat('total-projects', totalCount);
+    updateStat('completed-projects', completedCount);
+    updateStat('completed-projects-stat', completedCount);
+    updateStat('ongoing-projects', ongoingCount);
+    updateStat('ongoing-projects-stat', ongoingCount);
+    updateStat('stalled-projects', stalledCount);
+    updateStat('stalled-projects-stat', stalledCount);
 }
 
 // Initialize charts

@@ -175,8 +175,8 @@ const translations = {
         viewFiltered: "Angalia Miradi Iliyochujwa",
         
         // Tabs
-        mapView: "Angalia Ramani",
-        listView: "Angalia Orodha",
+        mapView: "Ramani",
+        listView: "Orodha",
         analytics: "Takwimu",
         reports: "Ripoti",
         
@@ -196,7 +196,7 @@ const translations = {
         noProjectsFound: "Hakuna miradi iliyopatikana inayolingana na filtri zako.",
         tryAdjusting: "Jaribu kurekebisha vigezo vyako vya utafutaji.",
         viewProject: "Angalia Maelezo",
-        sendProjectFeedback: "Tuma Maoni",
+        sendProjectFeedback: "Tuma Maoni ya Mradi",
         
         // Analytics
         projectAnalytics: "Takwimu za Miradi",
@@ -205,19 +205,19 @@ const translations = {
         budgetDistribution: "Usambazaji wa Bajeti",
         projectsBySubcounty: "Miradi kwa Wilaya Ndogo",
         projectsByLocation: "Miradi kwa Eneo",
-        completionRate: "Kiwango cha Ukamilifu",
+        completionRate: "Kiwango cha Ukamilishaji",
         
         // Reports
         generateReports: "Tengeneza Ripoti",
         viewReport: "Angalia Ripoti",
         summaryReport: "Ripoti ya Muhtasari",
         summaryDescription: "Muhtasari kamili wa miradi yote",
-        completedProjectsReport: "Miradi Iliyokamilika",
-        completedDescription: "Ripoti ya miradi yote iliyokamilika",
-        ongoingProjectsReport: "Miradi Inayoendelea",
-        ongoingDescription: "Ripoti ya hali ya miradi inayoendelea",
-        stalledProjectsReport: "Miradi Iliyozimia",
-        stalledDescription: "Miradi inayohitaji tahadhari",
+        completedProjectsReport: "Miradi Zilizokamilika",
+        completedDescription: "Ripoti ya miradi yote zilizokamilika",
+        ongoingProjectsReport: "Miradi Zinazoendelea",
+        ongoingDescription: "Ripoti ya hali ya miradi zinazoendelea",
+        stalledProjectsReport: "Miradi Zilizozimia",
+        stalledDescription: "Miradi zinazohitaji tahadhari",
         budgetAnalysisReport: "Uchambuzi wa Bajeti",
         budgetDescription: "Muhtasari na uchambuzi wa kifedha",
         locationReport: "Ripoti ya Eneo",
@@ -309,8 +309,8 @@ const translations = {
         viewFiltered: "Miradii Filirtay Arag",
         
         // Tabs
-        mapView: "Khariidada Eeg",
-        listView: "Liiska Eeg",
+        mapView: "Khariidada",
+        listView: "Liiska",
         analytics: "Tirakoobka",
         reports: "Warbixinnada",
         

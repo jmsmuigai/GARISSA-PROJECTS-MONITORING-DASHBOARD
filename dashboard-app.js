@@ -25,6 +25,48 @@ const SUB_COUNTIES = [
     'Ijara', 'Hulugho', 'Sankuri', 'Masalani', 'Bura East', 'Bura West'
 ];
 
+// Location Hierarchy: Sub-County -> Ward -> Village mapping for validation and autofix
+const LOCATION_HIERARCHY = {
+    'Garissa Township': {
+        wards: ['Waberi', 'Galbet', 'Township', 'Iftin'],
+        normalized: ['waberi', 'galbet', 'township', 'iftin']
+    },
+    'Balambala': {
+        wards: ['Balambala', 'Danyere', 'Jarajara', 'Saka', 'Sankuri'],
+        normalized: ['balambala', 'danyere', 'jarajara', 'saka', 'sankuri']
+    },
+    'Ijara': {
+        wards: ['Hulugho', 'Sangailu', 'Ijara', 'Masalani'],
+        normalized: ['hulugho', 'sangailu', 'ijara', 'masalani']
+    },
+    'Fafi': {
+        wards: ['Bura', 'Dekaharia', 'Jarajila', 'Fafi', 'Nanighi'],
+        normalized: ['bura', 'dekaharia', 'jarajila', 'fafi', 'nanighi']
+    },
+    'Dadaab': {
+        wards: ['Dertu', 'Dadaab', 'Labasigale', 'Damajale', 'Liboi', 'Abakaile'],
+        normalized: ['dertu', 'dadaab', 'labasigale', 'damajale', 'liboi', 'abakaile']
+    },
+    'Lagdera': {
+        wards: ['Modogashe', 'Benane', 'Goreale', 'Maalimin', 'Sabena', 'Baraki'],
+        normalized: ['modogashe', 'benane', 'goreale', 'maalimin', 'maalimin', 'sabena', 'baraki']
+    }
+};
+
+// Normalized sub-county names for matching
+const SUB_COUNTY_NORMALIZED = {
+    'garissa township': 'Garissa Township',
+    'garissatownship': 'Garissa Township',
+    'township': 'Garissa Township',
+    'balambala': 'Balambala',
+    'lagdera': 'Lagdera',
+    'dadaab': 'Dadaab',
+    'fafi': 'Fafi',
+    'ijara': 'Ijara',
+    'hulugho': 'Ijara', // Hulugho is a ward in Ijara
+    'masalani': 'Ijara' // Masalani is a ward in Ijara
+};
+
 const DEPARTMENTS = [
     'Water and Sanitation',
     'Education',
@@ -624,12 +666,21 @@ function parseCSVToProjects(csvText, sheetName = '') {
             });
             
             // Try to extract project name from multiple possible columns
+            // Skip "S/No." column if it's the first column
+            let nameIndex = 0;
+            const firstHeader = cleanHeaders[0] || '';
+            if (firstHeader.includes('s_no') || firstHeader.includes('sno') || firstHeader.includes('no') || 
+                firstHeader === 's' || firstHeader === '' || firstHeader.length < 3) {
+                nameIndex = 1; // Use second column if first is S/No.
+            }
+            
             project.name = (
                 project.project_name || 
                 project.name || 
                 project.title || 
                 project.project_title ||
                 project.project ||
+                values[nameIndex] || 
                 values[0] || 
                 `Project ${i}`
             ).trim();
@@ -642,25 +693,53 @@ function parseCSVToProjects(csvText, sheetName = '') {
                 continue;
             }
             
-            // Normalize all fields
-            project.description = (project.description || project.project_description || project.details || project.remarks || project.notes || '').trim();
-            project.status = normalizeStatus(project.status || project.project_status || project.state || project.current_status || project.project_status_2 || 'Ongoing');
-            project.department = (project.department || project.implementing_department || project.dept || project.implementing_agency || project.agency || 'County Executive').trim();
+            // Normalize all fields - handle new column names
+            project.description = (project.description || project.project_description || project.details || project.remarks || project.notes || project.additional_remarks || '').trim();
+            
+            // Handle status - map "0" to "Ongoing" and other variations
+            const statusValue = project.status || project.project_status || project.state || project.current_status || project.project_status_2 || project.project_status_at_the_time_of_the_exercise || 'Ongoing';
+            project.status = normalizeStatus(statusValue);
+            
+            project.department = (project.department || project.implementing_department || project.dept || project.implementing_agency || project.agency || project.sector_vote_name || 'County Executive').trim();
+            
+            // Handle Sub-County with autofix
             project.subcounty = (project.subcounty || project.sub_county || project.sub_county_name || project.subcounty_name || project.location_subcounty || '').trim();
+            
+            // Handle Ward with autofix
             project.ward = (project.ward || project.ward_name || project.ward_location || project.location_ward || '').trim();
             
-            // Parse budget (handle various formats)
-            const budgetStr = project.budget || project.total_budget || project.budget_amount || project.approved_budget || project.contract_amount || '0';
+            // Apply location autofix
+            const fixedLocation = autofixLocation(project.subcounty, project.ward);
+            project.subcounty = fixedLocation.subcounty;
+            project.ward = fixedLocation.ward;
+            
+            // Parse budget (handle various formats) - handle "Estimated Project Cost"
+            const budgetStr = project.budget || project.total_budget || project.budget_amount || project.approved_budget || project.contract_amount || 
+                             project.estimated_project_cost_kshs || project.approved_project_cost || project.funds_available_in_the_specific_year || '0';
             project.budget = parseBudget(budgetStr);
             
-            // Parse expenditure
-            const expStr = project.expenditure || project.amount_spent || project.expenses || project.expenditure_to_date || project.actual_expenditure || '0';
+            // Parse expenditure - handle "Expenditure to date"
+            const expStr = project.expenditure || project.amount_spent || project.expenses || project.expenditure_to_date || project.actual_expenditure || 
+                          project.total_disbursed_funds_as_at_30th_june_2024_kshs || '0';
             project.expenditure = parseBudget(expStr);
             
-            project.source_of_funds = (project.source_of_funds || project.funding_source || project.funder || project.donor || project.sponsor || '').trim();
-            project.start_date = (project.start_date || project.start_date_2 || project.commencement_date || project.start || project.date_started || '').trim();
-            project.completion_date = (project.completion_date || project.end_date || project.expected_completion || project.finish_date || project.end || project.date_completed || '').trim();
-            project.location = (project.location || project.project_location || project.site || project.physical_location || project.address || '').trim();
+            project.source_of_funds = (project.source_of_funds || project.funding_source || project.funder || project.donor || project.sponsor || 
+                                       project.project_funding_source || project.if_development_partners_please_specify || '').trim();
+            
+            // Handle dates - multiple possible column names
+            project.start_date = (project.start_date || project.start_date_2 || project.commencement_date || project.start || project.date_started || 
+                                 project.project_start_date_expected_start_date || project.date_of_approval_financial_approval || '').trim();
+            
+            // Expected completion date
+            project.expected_completion_date = (project.expected_completion_date || project.expected_project_completion_date || 
+                                               project.expected_completion || project.finish_date || '').trim();
+            
+            // Actual completion date
+            project.completion_date = (project.completion_date || project.end_date || project.actual_completion_date || 
+                                      project.actual_project_completion_date || project.date_completed || project.end || '').trim();
+            
+            project.location = (project.location || project.project_location || project.site || project.physical_location || project.address || 
+                               project.geographic_location_latitude_longitude || '').trim();
             
             // Determine year
             const dateStr = project.start_date || project.completion_date || '';
@@ -747,14 +826,90 @@ function parseCSVLine(line) {
     return values;
 }
 
-// Normalize status values
+// Normalize status values - handle "0" as "Ongoing"
 function normalizeStatus(status) {
-    if (!status) return 'Ongoing';
+    if (!status || status === '0' || status === 0 || String(status).trim() === '') return 'Ongoing';
     const statusLower = String(status).toLowerCase().trim();
     if (statusLower.includes('complete') || statusLower === 'done' || statusLower === 'finished') return 'Completed';
     if (statusLower.includes('ongoing') || statusLower === 'in progress' || statusLower === 'active') return 'Ongoing';
     if (statusLower.includes('stall') || statusLower === 'delayed' || statusLower === 'on hold') return 'Stalled';
     return 'Ongoing';
+}
+
+// Autofix location data using hierarchy
+function autofixLocation(subcounty, ward) {
+    let fixedSubcounty = subcounty || '';
+    let fixedWard = ward || '';
+    
+    // Normalize inputs
+    const subcountyLower = fixedSubcounty.toLowerCase().trim();
+    const wardLower = fixedWard.toLowerCase().trim();
+    
+    // Try to fix sub-county first
+    if (fixedSubcounty) {
+        // Check if it's already correct
+        if (LOCATION_HIERARCHY[fixedSubcounty]) {
+            // Sub-county is correct, now validate/fix ward
+            const hierarchy = LOCATION_HIERARCHY[fixedSubcounty];
+            if (fixedWard && hierarchy.normalized.includes(wardLower)) {
+                // Ward is valid, find the correct casing
+                const wardIndex = hierarchy.normalized.indexOf(wardLower);
+                if (wardIndex >= 0) {
+                    fixedWard = hierarchy.wards[wardIndex];
+                }
+            } else if (fixedWard) {
+                // Try fuzzy matching
+                const matchedWard = hierarchy.wards.find(w => 
+                    w.toLowerCase() === wardLower || 
+                    w.toLowerCase().includes(wardLower) ||
+                    wardLower.includes(w.toLowerCase())
+                );
+                if (matchedWard) {
+                    fixedWard = matchedWard;
+                }
+            }
+        } else {
+            // Try to normalize sub-county
+            const normalizedKey = SUB_COUNTY_NORMALIZED[subcountyLower];
+            if (normalizedKey && LOCATION_HIERARCHY[normalizedKey]) {
+                fixedSubcounty = normalizedKey;
+                // Now fix ward
+                const hierarchy = LOCATION_HIERARCHY[fixedSubcounty];
+                if (fixedWard && hierarchy.normalized.includes(wardLower)) {
+                    const wardIndex = hierarchy.normalized.indexOf(wardLower);
+                    if (wardIndex >= 0) {
+                        fixedWard = hierarchy.wards[wardIndex];
+                    }
+                } else if (fixedWard) {
+                    const matchedWard = hierarchy.wards.find(w => 
+                        w.toLowerCase() === wardLower || 
+                        w.toLowerCase().includes(wardLower) ||
+                        wardLower.includes(w.toLowerCase())
+                    );
+                    if (matchedWard) {
+                        fixedWard = matchedWard;
+                    }
+                }
+            }
+        }
+    } else if (fixedWard) {
+        // No sub-county but we have ward - try to infer from ward
+        for (const [subCounty, hierarchy] of Object.entries(LOCATION_HIERARCHY)) {
+            if (hierarchy.normalized.includes(wardLower)) {
+                fixedSubcounty = subCounty;
+                const wardIndex = hierarchy.normalized.indexOf(wardLower);
+                if (wardIndex >= 0) {
+                    fixedWard = hierarchy.wards[wardIndex];
+                }
+                break;
+            }
+        }
+    }
+    
+    return {
+        subcounty: fixedSubcounty || subcounty || '',
+        ward: fixedWard || ward || ''
+    };
 }
 
 // Enhance project with coordinates
@@ -1263,7 +1418,14 @@ function switchTab(tabName) {
         // Setup Excel table event listeners
         setupExcelTableListeners();
     } else if (tabName === 'analytics') {
-        updateCharts();
+        // Initialize charts if not already done
+        if (!charts.status || !charts.department || !charts.budget || !charts.subcounty) {
+            initializeCharts();
+        }
+        // Update all charts with current data
+        setTimeout(() => {
+            updateCharts();
+        }, 100);
     } else if (tabName === 'reports') {
         // Reports tab - ensure all projects are loaded and ready
         console.log(`📋 Reports View: ${allProjects.length} total projects available`);
@@ -1872,7 +2034,14 @@ function initializeCharts() {
                 responsive: true, 
                 maintainAspectRatio: true,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + ' projects';
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -1889,7 +2058,14 @@ function initializeCharts() {
                 maintainAspectRatio: true, 
                 indexAxis: 'y',
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.x + ' projects';
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -1905,7 +2081,14 @@ function initializeCharts() {
                 responsive: true, 
                 maintainAspectRatio: true,
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + ' projects';
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -1921,7 +2104,78 @@ function initializeCharts() {
                 responsive: true, 
                 maintainAspectRatio: true,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' projects';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Budget vs Expenditure chart
+    const budgetVsExpCtx = document.getElementById('budget-vs-expenditure-chart');
+    if (budgetVsExpCtx) {
+        charts['budget-vs-expenditure'] = new Chart(budgetVsExpCtx, {
+            type: 'bar',
+            data: { labels: [], datasets: [] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Year chart
+    const yearCtx = document.getElementById('year-chart');
+    if (yearCtx) {
+        charts.year = new Chart(yearCtx, {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' projects';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
                 }
             }
         });
@@ -1930,19 +2184,40 @@ function initializeCharts() {
 
 // Update charts
 function updateCharts() {
+    const projects = filteredProjects.length > 0 ? filteredProjects : allProjects;
+    
+    // Update Analytics Metrics
+    const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const totalExpenditure = projects.reduce((sum, p) => sum + (p.expenditure || 0), 0);
+    const avgBudget = projects.length > 0 ? totalBudget / projects.length : 0;
+    const completedCount = projects.filter(p => p.status === 'Completed').length;
+    const completionRate = projects.length > 0 ? Math.round((completedCount / projects.length) * 100) : 0;
+    
+    // Update metric cards
+    const budgetEl = document.getElementById('analytics-total-budget');
+    if (budgetEl) budgetEl.textContent = formatCurrency(totalBudget);
+    const expEl = document.getElementById('analytics-total-expenditure');
+    if (expEl) expEl.textContent = formatCurrency(totalExpenditure);
+    const avgEl = document.getElementById('analytics-avg-budget');
+    if (avgEl) avgEl.textContent = formatCurrency(avgBudget);
+    const rateEl = document.getElementById('analytics-completion-rate');
+    if (rateEl) rateEl.textContent = `${completionRate}%`;
+    
     // Status chart
     if (charts.status) {
         const statusCounts = {
-            'Completed': filteredProjects.filter(p => p.status === 'Completed').length,
-            'Ongoing': filteredProjects.filter(p => p.status === 'Ongoing').length,
-            'Stalled': filteredProjects.filter(p => p.status === 'Stalled').length
+            'Completed': projects.filter(p => p.status === 'Completed').length,
+            'Ongoing': projects.filter(p => p.status === 'Ongoing').length,
+            'Stalled': projects.filter(p => p.status === 'Stalled').length
         };
         
         charts.status.data = {
             labels: Object.keys(statusCounts),
             datasets: [{
                 data: Object.values(statusCounts),
-                backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
             }]
         };
         charts.status.update();
@@ -1951,17 +2226,21 @@ function updateCharts() {
     // Department chart
     if (charts.department) {
         const deptCounts = {};
-        filteredProjects.forEach(p => {
+        projects.forEach(p => {
             const dept = p.department || 'Unknown';
             deptCounts[dept] = (deptCounts[dept] || 0) + 1;
         });
         
+        const sortedDepts = Object.entries(deptCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        
         charts.department.data = {
-            labels: Object.keys(deptCounts),
+            labels: sortedDepts.map(d => d[0]),
             datasets: [{
                 label: 'Projects',
-                data: Object.values(deptCounts),
-                backgroundColor: '#dc2626'
+                data: sortedDepts.map(d => d[1]),
+                backgroundColor: '#3b82f6',
+                borderColor: '#2563eb',
+                borderWidth: 1
             }]
         };
         charts.department.update();
@@ -1977,7 +2256,7 @@ function updateCharts() {
             'Above 50M': 0
         };
         
-        filteredProjects.forEach(p => {
+        projects.forEach(p => {
             const budget = p.budget || 0;
             if (budget < 1000000) budgetRanges['Under 1M']++;
             else if (budget < 5000000) budgetRanges['1M - 5M']++;
@@ -1990,7 +2269,9 @@ function updateCharts() {
             labels: Object.keys(budgetRanges),
             datasets: [{
                 data: Object.values(budgetRanges),
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
             }]
         };
         charts.budget.update();
@@ -1999,7 +2280,7 @@ function updateCharts() {
     // Subcounty chart
     if (charts.subcounty) {
         const subcountyCounts = {};
-        filteredProjects.forEach(p => {
+        projects.forEach(p => {
             const sub = p.subcounty || 'Unknown';
             subcountyCounts[sub] = (subcountyCounts[sub] || 0) + 1;
         });
@@ -2009,10 +2290,65 @@ function updateCharts() {
             datasets: [{
                 label: 'Projects',
                 data: Object.values(subcountyCounts),
-                backgroundColor: '#059669'
+                backgroundColor: '#059669',
+                borderColor: '#047857',
+                borderWidth: 1
             }]
         };
         charts.subcounty.update();
+    }
+    
+    // Budget vs Expenditure chart
+    if (charts['budget-vs-expenditure']) {
+        const subcounties = [...new Set(projects.map(p => p.subcounty || 'Unknown'))];
+        const budgetData = subcounties.map(sub => 
+            projects.filter(p => (p.subcounty || 'Unknown') === sub).reduce((sum, p) => sum + (p.budget || 0), 0)
+        );
+        const expData = subcounties.map(sub => 
+            projects.filter(p => (p.subcounty || 'Unknown') === sub).reduce((sum, p) => sum + (p.expenditure || 0), 0)
+        );
+        
+        charts['budget-vs-expenditure'].data = {
+            labels: subcounties,
+            datasets: [{
+                label: 'Budget',
+                data: budgetData,
+                backgroundColor: '#3b82f6',
+                borderColor: '#2563eb',
+                borderWidth: 2
+            }, {
+                label: 'Expenditure',
+                data: expData,
+                backgroundColor: '#10b981',
+                borderColor: '#059669',
+                borderWidth: 2
+            }]
+        };
+        charts['budget-vs-expenditure'].update();
+    }
+    
+    // Year chart
+    if (charts.year) {
+        const yearCounts = {};
+        projects.forEach(p => {
+            const year = p.year || new Date().getFullYear();
+            yearCounts[year] = (yearCounts[year] || 0) + 1;
+        });
+        
+        const sortedYears = Object.keys(yearCounts).sort();
+        
+        charts.year.data = {
+            labels: sortedYears,
+            datasets: [{
+                label: 'Projects',
+                data: sortedYears.map(y => yearCounts[y]),
+                backgroundColor: '#8b5cf6',
+                borderColor: '#7c3aed',
+                borderWidth: 2,
+                fill: true
+            }]
+        };
+        charts.year.update();
     }
 }
 

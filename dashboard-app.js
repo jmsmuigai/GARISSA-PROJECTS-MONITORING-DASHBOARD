@@ -130,41 +130,92 @@ async function initializeApp() {
         lucide.createIcons();
     }
     
+    // Set a maximum timeout to ensure loading overlay is always hidden
+    const maxTimeout = setTimeout(() => {
+        console.warn('⚠️ Loading timeout - hiding overlay anyway');
+        hideLoading();
+    }, 45000); // 45 seconds max
+    
     try {
-        // Initialize database
+        // Initialize database FIRST for fast loading
         if (typeof projectsDB !== 'undefined') {
-            await projectsDB.init();
-            console.log('✅ Database initialized');
-        }
-        
-        // Check if projects exist in database
-        if (typeof projectsDB !== 'undefined') {
-            const dbProjects = await projectsDB.getAllProjects();
-            if (dbProjects && dbProjects.length > 0) {
-                console.log(`✅ Loaded ${dbProjects.length} projects from database`);
-                allProjects = dbProjects;
-                filteredProjects = [...allProjects];
-            } else {
-                // Load from Google Sheets if database is empty
-                await loadProjectsFromGoogleSheets();
+            try {
+                await projectsDB.init();
+                console.log('✅ Database initialized');
+                
+                // Try loading from database immediately (fastest)
+                const dbProjects = await projectsDB.getAllProjects();
+                if (dbProjects && dbProjects.length > 50) { // Only use if we have substantial data
+                    console.log(`✅ Loaded ${dbProjects.length} projects from database (FAST)`);
+                    allProjects = dbProjects;
+                    filteredProjects = [...allProjects];
+                    
+                    // Hide loading early if we have database data
+                    clearTimeout(maxTimeout);
+                    hideLoading();
+                    
+                    // Initialize UI immediately
+                    initializeMap();
+                    initializeFilters();
+                    initializeTabs();
+                    initializeCharts();
+                    initializeProjectDetailModal();
+                    renderProjects();
+                    updateStats();
+                    updateMapMarkers();
+                    updateCharts();
+                    updateFeedbackCounts();
+                    setupEventListeners();
+                    
+                    // Load fresh data in background (non-blocking)
+                    loadProjectsFromGoogleSheets().then(async (newProjects) => {
+                        if (newProjects && newProjects.length > allProjects.length) {
+                            console.log(`✅ Updated with ${newProjects.length} fresh projects from Google Sheets`);
+                            allProjects = newProjects;
+                            filteredProjects = [...allProjects];
+                            await projectsDB.storeProjects(allProjects);
+                            renderProjects();
+                            updateStats();
+                            updateMapMarkers();
+                            updateCharts();
+                        }
+                    }).catch(err => {
+                        console.warn('Background refresh failed (using cached data):', err);
+                    });
+                    
+                    return; // Exit early - we have data from database
+                }
+            } catch (dbError) {
+                console.warn('Database error, falling back to Google Sheets:', dbError);
             }
-        } else {
-            // Fallback: load from Google Sheets
-            await loadProjectsFromGoogleSheets();
         }
         
-        // Initialize map FIRST with satellite basemap
+        // If no database data, load from Google Sheets with optimized timeout
+        console.log('📥 Loading from Google Sheets...');
+        
+        // Initialize map while loading (non-blocking)
         initializeMap();
         
-        // Load projects from Google Sheets with extended timeout for 800 projects
-        if (allProjects.length === 0) {
-            await Promise.race([
+        // Load with multiple strategies in parallel
+        const loadPromises = [
+            Promise.race([
                 loadProjectsFromGoogleSheets(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 30000)) // 30 second timeout for 800 projects
-            ]).catch(async (error) => {
-                console.warn('Loading from Google Sheets failed or timed out:', error);
-                await loadFallbackData();
-            });
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000)) // Reduced to 15 seconds
+            ])
+        ];
+        
+        // Also try fallback data in parallel
+        const fallbackPromise = loadFallbackData();
+        
+        try {
+            const projects = await Promise.any(loadPromises);
+            if (projects && projects.length > 0) {
+                console.log(`✅ Loaded ${projects.length} projects from Google Sheets`);
+                allProjects = projects;
+            }
+        } catch (error) {
+            console.warn('Google Sheets load failed, using fallback:', error);
+            await fallbackPromise;
         }
         
         // Validate and fix project data
@@ -176,9 +227,11 @@ async function initializeApp() {
         
         filteredProjects = [...allProjects];
         
-        // Store in database after validation
+        // Store in database for next time (fast loading)
         if (typeof projectsDB !== 'undefined' && allProjects.length > 0) {
-            await projectsDB.storeProjects(allProjects);
+            projectsDB.storeProjects(allProjects).catch(err => {
+                console.warn('Database storage failed (non-critical):', err);
+            });
         }
         
         // Initialize UI components
@@ -197,118 +250,122 @@ async function initializeApp() {
         // Setup event listeners
         setupEventListeners();
         
-        // Update feedback counts
-        updateFeedbackCounts();
-        
         console.log(`✅ Successfully loaded ${allProjects.length} projects`);
         
     } catch (error) {
         console.error('Error initializing app:', error);
         // Load fallback data on any error
-        await loadFallbackData();
-        renderProjects();
-        updateStats();
-        updateMapMarkers();
-        updateCharts();
-        showError('Loaded sample data. Please check Google Sheets connection.');
+        try {
+            await loadFallbackData();
+            renderProjects();
+            updateStats();
+            updateMapMarkers();
+            updateCharts();
+            showError('Loaded sample data. Please check Google Sheets connection.');
+        } catch (fallbackError) {
+            console.error('Even fallback failed:', fallbackError);
+            showError('Unable to load projects. Please refresh the page.');
+        }
     } finally {
-        hideLoading();
+        clearTimeout(maxTimeout);
+        hideLoading(); // ALWAYS hide loading overlay
         // Re-initialize icons after dynamic content is loaded
         setTimeout(() => {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-        }, 500);
+        }, 300);
     }
 }
 
-// Load projects from Google Sheets - Enhanced to load ALL 800 projects
+// Load projects from Google Sheets - FAST and OPTIMIZED
 async function loadProjectsFromGoogleSheets() {
     const GOOGLE_SHEETS_ID = '1-DNepBW2my39yooT_K6uTnRRIMJv0NtI';
     
-    // Try all possible sheet names from the actual spreadsheet
+    // Prioritize most likely sheet names first
     const sheetNames = [
         'Summary List for Dashboard',
         'Project Stocktaking Template',
-        'Projects',
-        'Data',
-        'Main',
         'Sheet1',
-        'Sheet 1',
-        'Garissa Projects',
-        'All Projects'
+        'Projects',
+        'Data'
     ];
     
     let allLoadedProjects = [];
     
-    // Try each sheet name
-    for (const sheetName of sheetNames) {
+    // Try sheets in parallel with timeout per sheet (FASTER)
+    const sheetPromises = sheetNames.map(async (sheetName) => {
         try {
             const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-            console.log(`Trying to load from sheet: ${sheetName}`);
             
-            const response = await fetch(csvUrl, { 
-                mode: 'cors',
-                cache: 'no-cache',
-                headers: {
-                    'Accept': 'text/csv'
+            const response = await Promise.race([
+                fetch(csvUrl, { 
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: { 'Accept': 'text/csv' }
+                }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Sheet timeout')), 8000)
+                )
+            ]);
+            
+            if (!response.ok) return null;
+            
+            const csvText = await response.text();
+            if (!csvText || csvText.trim().length < 50) return null;
+            
+            const projects = parseCSVToProjects(csvText, sheetName);
+            if (projects && projects.length > 0) {
+                console.log(`✅ Parsed ${projects.length} projects from ${sheetName}`);
+                return projects;
+            }
+            return null;
+        } catch (error) {
+            console.warn(`Sheet ${sheetName} failed:`, error.message);
+            return null;
+        }
+    });
+    
+    // Wait for first successful load (don't wait for all)
+    const results = await Promise.allSettled(sheetPromises);
+    
+    for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+            result.value.forEach(newProject => {
+                const exists = allLoadedProjects.find(p => 
+                    p.name === newProject.name && 
+                    p.subcounty === newProject.subcounty &&
+                    Math.abs((p.budget || 0) - (newProject.budget || 0)) < 100
+                );
+                if (!exists) {
+                    allLoadedProjects.push(newProject);
                 }
             });
-            
-            if (response.ok) {
-                const csvText = await response.text();
-                console.log(`Received ${csvText.length} characters from ${sheetName}`);
-                
-                if (csvText && csvText.trim().length > 50) {
-                    const projects = parseCSVToProjects(csvText, sheetName);
-                    console.log(`✅ Parsed ${projects.length} projects from ${sheetName}`);
-                    
-                    if (projects.length > 0) {
-                        // Merge projects (avoid duplicates)
-                        projects.forEach(newProject => {
-                            const exists = allLoadedProjects.find(p => 
-                                p.name === newProject.name && 
-                                p.subcounty === newProject.subcounty &&
-                                p.budget === newProject.budget
-                            );
-                            if (!exists) {
-                                allLoadedProjects.push(newProject);
-                            }
-                        });
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn(`Error loading sheet ${sheetName}:`, error.message);
-            continue;
         }
     }
     
+    // If we got some projects, use them (even if not all sheets loaded)
     if (allLoadedProjects.length === 0) {
         throw new Error('No projects loaded from any sheet');
     }
     
     console.log(`✅ Total projects loaded: ${allLoadedProjects.length}`);
     
-    // Enhance all projects with coordinates and IDs
-    allProjects = allLoadedProjects.map((p, index) => {
-        const enhanced = enhanceProjectWithCoordinates(p);
-        if (!enhanced.id) enhanced.id = `project-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        return enhanced;
+    // Enhance all projects with coordinates and IDs (batch process)
+    const enhanced = allLoadedProjects.map((p, index) => {
+        const project = enhanceProjectWithCoordinates(p);
+        if (!project.id) project.id = `project-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return project;
     });
     
-    // Store in database
-    try {
-        if (typeof projectsDB !== 'undefined') {
-            await projectsDB.init();
-            await projectsDB.storeProjects(allProjects);
-            console.log(`✅ Stored ${allProjects.length} projects in database`);
-        }
-    } catch (dbError) {
-        console.warn('Database storage failed, continuing with memory:', dbError);
+    // Store in database (non-blocking)
+    if (typeof projectsDB !== 'undefined' && enhanced.length > 0) {
+        projectsDB.storeProjects(enhanced).catch(err => {
+            console.warn('Database storage failed (non-critical):', err);
+        });
     }
     
-    return allProjects;
+    return enhanced;
 }
 
 // Load fallback sample data
@@ -2128,7 +2185,13 @@ function showLoading() {
 
 function hideLoading() {
     const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.classList.add('hidden');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        // Force hide with important styles
+        overlay.style.display = 'none';
+        overlay.style.visibility = 'hidden';
+        overlay.style.opacity = '0';
+    }
 }
 
 function showError(message) {

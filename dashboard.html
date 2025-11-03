@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garissa County Projects Dashboard - Public View</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet.js for GIS Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Chart.js for Data Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide-icons@0.378.0/dist/lucide.js"></script>
+    
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="Garissa_logo.png">
+    
+    <style>
+        .gradient-header {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 50%, #059669 100%);
+        }
+        .project-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .filter-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        .status-ongoing { background-color: #fef3c7; color: #92400e; }
+        .status-stalled { background-color: #fee2e2; color: #991b1b; }
+        
+        /* Special marker styles for Garissa Town */
+        .garissa-town-marker {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        
+        .map-legend {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-header text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="Garissa_logo.png" alt="Garissa County Logo" class="w-16 h-16 rounded-full border-4 border-white shadow-lg">
+                    <div>
+                        <h1 class="text-3xl font-bold">Garissa County Projects Dashboard</h1>
+                        <p class="text-green-100 text-sm mt-1">Real-time monitoring of county development projects</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="mailto:feedback@garissa.go.ke?subject=Dashboard%20Feedback" 
+                       class="bg-white text-red-800 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center space-x-2">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                        <span>Send Feedback</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Summary Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Total Projects</p>
+                        <p id="total-projects" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-blue-100 p-4 rounded-full">
+                        <i data-lucide="folder" class="w-8 h-8 text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Completed</p>
+                        <p id="completed-projects" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-green-100 p-4 rounded-full">
+                        <i data-lucide="check-circle-2" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Ongoing</p>
+                        <p id="ongoing-projects" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-yellow-100 p-4 rounded-full">
+                        <i data-lucide="loader" class="w-8 h-8 text-yellow-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Stalled</p>
+                        <p id="stalled-projects" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-red-100 p-4 rounded-full">
+                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i data-lucide="filter" class="w-5 h-5 mr-2"></i>
+                    Filter Projects
+                </h2>
+                <button id="clear-filters" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                    Clear All Filters
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Projects</label>
+                    <input type="text" id="search-input" placeholder="Project name, location..." 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="status-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Ongoing">Ongoing</option>
+                        <option value="Stalled">Stalled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sub-County</label>
+                    <select id="subcounty-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Sub-Counties</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ward</label>
+                    <select id="ward-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Wards</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <select id="department-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Budget Range (KSh)</label>
+                    <select id="budget-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Budgets</option>
+                        <option value="0-1000000">Under 1M</option>
+                        <option value="1000000-5000000">1M - 5M</option>
+                        <option value="5000000-10000000">5M - 10M</option>
+                        <option value="10000000-50000000">10M - 50M</option>
+                        <option value="50000000-999999999">Above 50M</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                    <select id="year-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Years</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Source of Funds</label>
+                    <select id="funding-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <option value="">All Sources</option>
+                    </select>
+                </div>
+            </div>
+            <div id="active-filters" class="mt-4 flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Tabs for Views -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                    <button class="tab-button active py-4 px-1 border-b-2 font-medium text-sm" data-tab="map">
+                        <i data-lucide="map" class="w-4 h-4 inline mr-2"></i>
+                        Map View
+                    </button>
+                    <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="list">
+                        <i data-lucide="list" class="w-4 h-4 inline mr-2"></i>
+                        List View
+                    </button>
+                    <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="analytics">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 inline mr-2"></i>
+                        Analytics
+                    </button>
+                    <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="reports">
+                        <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>
+                        Reports
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Map View -->
+            <div id="map-tab" class="tab-content p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Projects Geographic Distribution</h3>
+                    <button id="generate-map-report" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Export Map Report</span>
+                    </button>
+                </div>
+                <div id="map" class="h-[600px] rounded-lg border border-gray-200"></div>
+                <div class="mt-4 map-legend">
+                    <h4 class="font-semibold text-gray-800 mb-2">Legend</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow"></div>
+                            <span>Completed Projects</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 rounded-full bg-yellow-500 border-2 border-white shadow"></div>
+                            <span>Ongoing Projects</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow"></div>
+                            <span>Stalled Projects</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow animate-pulse"></div>
+                            <span>Garissa Town Projects</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div id="list-tab" class="tab-content p-6 hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">All Projects</h3>
+                    <div class="flex space-x-2">
+                        <button id="export-excel" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Export Excel</span>
+                        </button>
+                        <button id="export-pdf" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span>Export PDF</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="projects-container" class="space-y-4">
+                    <!-- Projects will be loaded here -->
+                </div>
+                <div id="projects-pagination" class="mt-6 flex justify-center space-x-2"></div>
+            </div>
+
+            <!-- Analytics View -->
+            <div id="analytics-tab" class="tab-content p-6 hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Project Analytics</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-4">Projects by Status</h4>
+                        <canvas id="status-chart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-4">Projects by Department</h4>
+                        <canvas id="department-chart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-4">Budget Distribution</h4>
+                        <canvas id="budget-chart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-4">Projects by Sub-County</h4>
+                        <canvas id="subcounty-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports View -->
+            <div id="reports-tab" class="tab-content p-6 hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Generate Reports</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="summary">
+                        <i data-lucide="file-text" class="w-12 h-12 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Summary Report</h4>
+                        <p class="text-blue-100">Complete overview of all projects</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="completed">
+                        <i data-lucide="check-circle-2" class="w-12 h-12 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Completed Projects</h4>
+                        <p class="text-green-100">All finished projects report</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="ongoing">
+                        <i data-lucide="loader" class="w-12 h-12 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Ongoing Projects</h4>
+                        <p class="text-yellow-100">Active projects status report</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="stalled">
+                        <i data-lucide="alert-circle" class="w-12 h-12 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Stalled Projects</h4>
+                        <p class="text-red-100">Projects requiring attention</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="budget">
+                        <i data-lucide="dollar-sign" class="w-12 h-12 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Budget Analysis</h4>
+                        <p class="text-purple-100">Financial overview and analysis</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="location">
+                        <i data-lucide="map-pin" class="w-12 h-12 mb-4"></i>
+                        <h4 class="text-xl font-bold mb-2">Location Report</h4>
+                        <p class="text-indigo-100">Geographic distribution analysis</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12 py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Garissa County Government</h4>
+                    <p class="text-gray-400 text-sm">Transparent project monitoring and tracking for all citizens.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Contact Us</h4>
+                    <p class="text-gray-400 text-sm mb-2">
+                        <i data-lucide="mail" class="w-4 h-4 inline mr-2"></i>
+                        <a href="mailto:feedback@garissa.go.ke" class="hover:text-green-400">feedback@garissa.go.ke</a>
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Quick Links</h4>
+                    <ul class="text-gray-400 text-sm space-y-2">
+                        <li><a href="#" class="hover:text-green-400">About the Dashboard</a></li>
+                        <li><a href="USER_MANUAL.md" class="hover:text-green-400">User Manual</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; 2024 Garissa County Government. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <p class="text-gray-800 font-semibold">Loading projects data...</p>
+            <p class="text-gray-600 text-sm mt-2">Please wait while we fetch all project information</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="dashboard-app.js"></script>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+

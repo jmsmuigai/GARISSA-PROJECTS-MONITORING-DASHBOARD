@@ -1,235 +1,253 @@
-# Garissa County Project Monitoring Dashboard - User Manual
+# Garissa County Projects Dashboard - User Manual
 
 ## 📋 Table of Contents
 1. [Getting Started](#getting-started)
-2. [Login and Authentication](#login-and-authentication)
-3. [Dashboard Overview](#dashboard-overview)
-4. [Project Management](#project-management)
-5. [User Management](#user-management)
-6. [AI Reports](#ai-reports)
-7. [Analytics](#analytics)
-8. [Troubleshooting](#troubleshooting)
+2. [Dashboard Overview](#dashboard-overview)
+3. [Viewing Projects](#viewing-projects)
+4. [Filtering Projects](#filtering-projects)
+5. [Map View](#map-view)
+6. [Analytics](#analytics)
+7. [Reports](#reports)
+8. [Feedback](#feedback)
+9. [Troubleshooting](#troubleshooting)
 
 ## 🚀 Getting Started
 
 ### System Requirements
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 - Internet connection
-- Valid email address or UPN (Unique Personal Number)
+- No login required - public access
 
-### First Time Setup
-1. **Access the Dashboard**: Navigate to your dashboard URL
-2. **Initial Login**: Use default admin credentials:
-   - UPN: `123456789`
-   - Password: `Admin.123!`
-3. **Change Password**: Update your password after first login
-4. **Create Users**: Add departmental admins through User Management
-
-## 🔐 Login and Authentication
-
-### Login Options
-
-#### Option 1: Gmail Login
-1. Click the **Gmail Login** tab
-2. Click **"Continue with Google"**
-3. Sign in with your Gmail account
-4. Grant necessary permissions
-
-#### Option 2: UPN Login
-1. Click the **UPN Login** tab
-2. Enter your 9-digit UPN number
-3. Enter your password
-4. Click **"Sign In with UPN"**
-
-### Password Requirements
-- Minimum 8 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-- At least one special character
-
-### Default Admin Credentials
-- **UPN**: 123456789
-- **Password**: Admin.123!
-- **Role**: Super Admin
-- **Department**: County Executive
+### Accessing the Dashboard
+1. **Open the Dashboard**: Simply click on the dashboard link shared with you
+2. **No Login Required**: The dashboard is publicly accessible
+3. **Automatic Loading**: Projects data loads automatically from Google Sheets
 
 ## 📊 Dashboard Overview
 
-The dashboard provides a real-time overview of all projects in Garissa County.
+The Garissa County Projects Dashboard provides transparent, real-time monitoring of all county development projects. The dashboard is organized into several main sections:
 
-### Statistics Cards
+### Summary Statistics
+At the top of the dashboard, you'll see four key statistics:
 - **Total Projects**: Number of all projects in the system
-- **Completed**: Projects that have been finished
-- **Ongoing**: Projects currently in progress
-- **Stalled**: Projects that have been delayed or stopped
+- **Completed**: Projects that have been finished (green)
+- **Ongoing**: Projects currently in progress (yellow)
+- **Stalled**: Projects that have been delayed or stopped (red)
+
+These statistics update automatically based on your active filters.
+
+### Main Views
+The dashboard has four main views accessible via tabs:
+1. **Map View**: Geographic visualization of all projects
+2. **List View**: Detailed list of all projects grouped by status
+3. **Analytics**: Charts and graphs showing project statistics
+4. **Reports**: Generate and download various project reports
+
+## 👁️ Viewing Projects
+
+### List View
+The List View shows all projects organized by status:
+- **Completed Projects**: All finished projects
+- **Ongoing Projects**: Projects currently in progress
+- **Stalled Projects**: Projects requiring attention
+
+Each project card displays:
+- Project name
+- Status badge (color-coded)
+- Department
+- Location (Sub-County and Ward)
+- Budget information
+- Special indicator if located in Garissa Town (📍)
+
+### Project Status Colors
+- 🟢 **Green**: Completed projects
+- 🟡 **Yellow**: Ongoing projects
+- 🔴 **Red**: Stalled projects
+
+## 🔍 Filtering Projects
+
+The dashboard includes comprehensive filtering options to help you find specific projects:
+
+### Available Filters
+
+1. **Search Projects**
+   - Type keywords to search project names, descriptions, or locations
+   - Real-time search as you type
+
+2. **Status Filter**
+   - Filter by: All Status, Completed, Ongoing, or Stalled
+
+3. **Sub-County Filter**
+   - Select a specific sub-county to see projects in that area
+   - Options include all 11 sub-counties in Garissa County
+
+4. **Ward Filter**
+   - Filter projects by specific ward
+   - Dropdown populates with all available wards
+
+5. **Department Filter**
+   - Filter by implementing department
+   - Options include Water, Education, Health, Agriculture, Infrastructure, etc.
+
+6. **Budget Range Filter**
+   - Under 1M KSh
+   - 1M - 5M KSh
+   - 5M - 10M KSh
+   - 10M - 50M KSh
+   - Above 50M KSh
+
+7. **Year Filter**
+   - Filter projects by year (start or completion year)
+
+8. **Source of Funds Filter**
+   - Filter by funding organization (Government, Donors, etc.)
+
+### Using Filters
+- **Multiple Filters**: You can apply multiple filters simultaneously
+- **Active Filters**: Applied filters are displayed as badges below the filter panel
+- **Clear Filters**: Click "Clear All Filters" to reset all filters
+
+### Filter Examples
+- *Find all ongoing water projects in Garissa Township*: Select "Ongoing" status + "Garissa Township" sub-county + "Water and Sanitation" department
+- *Find high-budget projects*: Select "Above 50M" budget range
+- *Find projects from 2024*: Select "2024" in the year filter
+
+## 🗺️ Map View
 
 ### Interactive Map
-- **Project Locations**: Click on markers to see project details
-- **Color Coding**:
-  - 🟢 Green: Completed projects
-  - 🟡 Yellow: Ongoing projects
-  - 🔴 Red: Stalled projects
-  - 🔵 Blue: Planning phase projects
+The Map View shows the geographic distribution of all projects across Garissa County.
 
-### Department Chart
-- Horizontal bar chart showing project distribution across departments
-- Helps identify which departments have the most projects
+### Map Features
+- **Zoom Controls**: Use mouse wheel or +/- buttons to zoom in/out
+- **Pan**: Click and drag to move around the map
+- **Project Markers**: Click on any marker to see project details in a popup
 
-## 📁 Project Management
+### Marker Colors
+- 🟢 **Green**: Completed projects
+- 🟡 **Yellow**: Ongoing projects
+- 🔴 **Red**: Stalled projects
+- 🟣 **Purple (Pulsing)**: Projects located in Garissa Town
 
-### Adding a New Project
+### Map Legend
+A legend at the bottom of the map explains the color coding.
 
-1. **Navigate to Projects**: Click "Projects" in the sidebar
-2. **Click "Add New Project"**: Green button in top-right corner
-3. **Fill in Project Details**:
-   - **Project Name**: Descriptive title
-   - **Description**: Detailed project description
-   - **Sub-County**: Select from dropdown (coordinates auto-fill)
-   - **Ward**: Select ward (coordinates auto-fill)
-   - **Department**: Implementing department
-   - **Status**: Current project status
-   - **Dates**: Start and completion dates
-   - **Budget**: Approved budget in KSh
-   - **Expenditure**: Amount spent to date
-   - **Source of Funds**: Funding organization
+### Map Popup Information
+When you click on a project marker, you'll see:
+- Project name
+- Status badge
+- Department
+- Location (Sub-County and Ward)
+- Budget
+- Project description (truncated)
 
-4. **Save Project**: Click "Save Project" button
-
-### Editing a Project
-
-1. **Find Project**: Use search or filters to locate project
-2. **Click Edit Icon**: Pencil icon in Actions column
-3. **Modify Information**: Update any fields as needed
-4. **Save Changes**: Click "Save Project"
-
-### Deleting a Project
-
-1. **Find Project**: Use search or filters to locate project
-2. **Click Delete Icon**: Trash icon in Actions column
-3. **Confirm Deletion**: Click "OK" in confirmation dialog
-4. **Project Removed**: Project is permanently deleted
-
-### Bulk Upload
-
-1. **Download Template**: Click "Bulk Upload" button
-2. **Fill CSV File**: Use `projects_template.csv` as guide
-3. **Upload File**: Select completed CSV file
-4. **Confirm Upload**: Review project count and confirm
-5. **Processing**: System processes projects in batches
-
-### Project Search and Filtering
-
-#### Search
-- **Search Box**: Type project name or description keywords
-- **Real-time Results**: Table updates as you type
-
-#### Filters
-- **Department Filter**: Show projects by specific department
-- **Status Filter**: Show projects by status (Ongoing, Completed, Stalled)
-- **Combined Filters**: Use multiple filters simultaneously
-
-### Project Statuses
-
-- **Planning**: Project in initial planning phase
-- **Ongoing**: Project currently being implemented
-- **Completed**: Project successfully finished
-- **Stalled**: Project delayed or temporarily stopped
-- **Suspended**: Project temporarily halted
-- **Cancelled**: Project terminated
-
-## 👥 User Management (Super Admin Only)
-
-### Adding New Users
-
-1. **Navigate to Users**: Click "User Management" in sidebar
-2. **Click "Add New User"**: Green button in top-right
-3. **Fill User Details**:
-   - **Email**: Valid email address
-   - **Password**: Temporary password (user should change)
-   - **Department**: Assign to appropriate department
-   - **Role**: Admin or Super Admin
-4. **Save User**: Click "Save User"
-5. **Create Auth Account**: Go to Firebase Console to create authentication account
-
-### User Roles
-
-#### Super Admin
-- Full system access
-- User management
-- All project access
-- System configuration
-
-#### Admin
-- Department-specific projects only
-- Project management within department
-- Reports and analytics
-- Cannot manage users
-
-### Deleting Users
-
-1. **Find User**: Locate user in table
-2. **Click Delete Icon**: Trash icon in Actions column
-3. **Confirm Deletion**: Click "OK" in confirmation dialog
-4. **Remove from Firebase**: Also delete from Firebase Authentication console
-
-## 🤖 AI Reports
-
-### Generating AI Reports
-
-1. **Navigate to Reports**: Click "AI Reports" in sidebar
-2. **Enter Your Query**: Type your question or request
-3. **Click "Generate AI Report"**: System processes your request
-4. **View Results**: AI-generated report appears below
-
-### Example Queries
-
-#### Project Analysis
-- "Show me all stalled projects and suggest reasons why"
-- "Which departments have the highest budget allocation?"
-- "What projects are at risk of going over budget?"
-
-#### Performance Insights
-- "Analyze project completion rates by department"
-- "Identify projects that are behind schedule"
-- "Compare budget vs expenditure across all projects"
-
-#### Strategic Planning
-- "What are the main challenges facing project implementation?"
-- "Recommend priority areas for future investment"
-- "Analyze geographic distribution of projects"
-
-### AI Report Features
-- **Markdown Formatting**: Clear headings and bullet points
-- **Actionable Insights**: Specific recommendations
-- **Data-Driven**: Based on actual project data
-- **Context-Aware**: Understands Garissa County context
+### Garissa Town Projects
+Projects located in Garissa Town are displayed with special purple pulsing markers, making them easy to identify on the map.
 
 ## 📈 Analytics
 
-### Budget Analysis
-- **Doughnut Chart**: Budget distribution by project status
-- **Visual Insights**: Easy identification of budget allocation patterns
-- **Interactive**: Hover for detailed information
+The Analytics view provides visual insights into project data through interactive charts:
 
-### Timeline Analysis
-- **Line Chart**: Projects started by year
-- **Trend Analysis**: Identify patterns in project initiation
-- **Planning Tool**: Helps with future project planning
+### Available Charts
 
-### Key Metrics
-- **Total Budget**: Sum of all project budgets
-- **Total Expenditure**: Sum of all project expenditures
-- **Completion Rate**: Percentage of completed projects
-- **Average Project Duration**: Typical project timeline
+1. **Projects by Status**
+   - Doughnut chart showing distribution of Completed, Ongoing, and Stalled projects
+   - Color-coded for easy understanding
+
+2. **Projects by Department**
+   - Horizontal bar chart showing number of projects per department
+   - Helps identify which departments have the most active projects
+
+3. **Budget Distribution**
+   - Pie chart showing projects grouped by budget ranges
+   - Helps understand budget allocation patterns
+
+4. **Projects by Sub-County**
+   - Bar chart showing project distribution across sub-counties
+   - Identifies which areas have the most development activity
+
+### Using Analytics
+- Charts automatically update based on your active filters
+- Hover over chart elements for detailed information
+- Charts are responsive and adjust to screen size
+
+## 📄 Reports
+
+The Reports section allows you to generate and download various project reports.
+
+### Available Reports
+
+1. **Summary Report**
+   - Complete overview of all projects
+   - Includes all project details and statistics
+
+2. **Completed Projects Report**
+   - Focuses only on finished projects
+   - Useful for tracking accomplishments
+
+3. **Ongoing Projects Report**
+   - Lists all active projects
+   - Helps monitor current development activities
+
+4. **Stalled Projects Report**
+   - Highlights projects requiring attention
+   - Useful for identifying and addressing issues
+
+5. **Budget Analysis Report**
+   - Financial overview and analysis
+   - Budget vs expenditure information
+
+6. **Location Report**
+   - Geographic distribution analysis
+   - Project locations by sub-county and ward
+
+### Generating Reports
+1. Navigate to the **Reports** tab
+2. Click on the report card you want to generate
+3. The report will be downloaded as an Excel file (.xlsx)
+4. Reports are filtered based on your current filter settings
+
+### Export Options
+
+#### Export from List View
+- **Export Excel**: Export all visible projects to Excel format
+- **Export PDF**: Export projects as a text report file
+
+#### Export from Map View
+- **Export Map Report**: Generate a report of all projects visible on the map
+
+### Report Contents
+All reports include:
+- Project name
+- Status
+- Department
+- Location (Sub-County and Ward)
+- Budget information
+- Additional project details
+
+## 💬 Feedback
+
+### Sending Feedback
+The dashboard includes a prominent **"Send Feedback"** button in the header that allows you to send feedback directly to the county.
+
+1. Click the **"Send Feedback"** button
+2. Your default email client will open with a pre-addressed email to **feedback@garissa.go.ke**
+3. Compose your message about:
+   - Dashboard usability
+   - Suggestions for improvement
+   - Reporting issues
+   - General comments about projects
+4. Send your email
+
+### Feedback Email
+All feedback is sent to: **feedback@garissa.go.ke**
 
 ## 🗺️ Garissa County Geography
 
 ### Sub-counties (11 Total)
-1. **Garissa Township**: County headquarters
+1. **Garissa Township**: County headquarters and largest urban area
 2. **Balambala**: Northern sub-county
 3. **Lagdera**: Central sub-county
-4. **Dadaab**: Eastern sub-county
+4. **Dadaab**: Eastern sub-county (known for refugee camps)
 5. **Fafi**: Southeastern sub-county
 6. **Ijara**: Southern sub-county
 7. **Hulugho**: Southwestern sub-county
@@ -238,105 +256,139 @@ The dashboard provides a real-time overview of all projects in Garissa County.
 10. **Bura East**: Eastern sub-county
 11. **Bura West**: Eastern sub-county
 
-### Wards per Sub-county
-Each sub-county contains multiple wards. When selecting a sub-county, the ward dropdown automatically updates with relevant options.
-
-### Coordinate System
-- **Auto-fill Coordinates**: Selecting sub-county and ward automatically fills latitude and longitude
-- **Manual Override**: You can manually adjust coordinates if needed
-- **Map Integration**: Coordinates are used for map marker placement
+### Project Locations
+Projects are displayed on the map using:
+- **Automatic Geocoding**: Location coordinates are automatically generated from project location data
+- **UTM Coordinate System**: Projects use geographic coordinates for accurate mapping
+- **Garissa Town Highlighting**: Projects in Garissa Town are specially marked with purple pulsing markers
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-#### Login Problems
-**Problem**: Cannot log in with UPN
-**Solution**: 
-- Ensure UPN is exactly 9 digits
-- Check password is correct
-- Contact administrator if account doesn't exist
+#### Projects Not Loading
+**Problem**: Dashboard shows "Loading projects data..." for a long time
 
-**Problem**: Gmail login fails
-**Solution**:
-- Ensure pop-ups are enabled
-- Check internet connection
-- Try different browser
+**Solutions**:
+- Check your internet connection
+- Refresh the page (F5 or Ctrl+R)
+- Clear browser cache and refresh
+- Check if Google Sheets is accessible
 
-#### Project Issues
-**Problem**: Project not appearing on map
-**Solution**:
-- Check latitude and longitude are entered
-- Verify coordinates are valid (negative latitude for Kenya)
-- Ensure project is saved successfully
+#### Map Not Displaying
+**Problem**: Map appears blank or doesn't load
 
-**Problem**: CSV upload fails
-**Solution**:
-- Check CSV format matches template exactly
-- Ensure all required fields are filled
-- Verify file is not corrupted
-
-#### Performance Issues
-**Problem**: Dashboard loads slowly
-**Solution**:
-- Check internet connection
+**Solutions**:
+- Ensure JavaScript is enabled in your browser
+- Check internet connection (map tiles need internet)
+- Try a different browser
 - Clear browser cache
-- Try refreshing the page
+
+#### Filters Not Working
+**Problem**: Filter selections don't update the results
+
+**Solutions**:
+- Ensure JavaScript is enabled
+- Try clearing filters and reapplying
+- Refresh the page
+- Check browser console for errors (F12)
+
+#### Export Not Working
+**Problem**: Export buttons don't download files
+
+**Solutions**:
+- Check browser download settings
+- Ensure pop-ups aren't blocked
+- Try a different browser
+- Check available disk space
 
 ### Browser Compatibility
 - **Chrome**: Recommended for best performance
 - **Firefox**: Full compatibility
 - **Safari**: Full compatibility
 - **Edge**: Full compatibility
+- **Mobile Browsers**: Responsive design works on tablets and smartphones
 
-### Data Limits
-- **Projects per Upload**: Maximum 500 projects per CSV upload
-- **File Size**: CSV files should be under 10MB
-- **Map Markers**: System handles up to 1000 markers efficiently
+### Data Refresh
+- Project data is loaded from Google Sheets
+- Data updates automatically when Google Sheets is updated
+- Refresh the page to get the latest data
 
-### Security Best Practices
-- **Change Default Password**: Update admin password immediately
-- **Use Strong Passwords**: Follow password requirements
-- **Logout When Done**: Always logout from shared computers
-- **Report Issues**: Contact administrator for security concerns
+### Performance Tips
+- **Many Projects**: If viewing hundreds of projects, filters can help improve performance
+- **Map Performance**: Zooming in on specific areas reduces markers and improves map performance
+- **Browser Cache**: Clearing cache periodically can improve loading times
 
 ## 📞 Support
 
 ### Getting Help
-- **Email**: jmsmuigai@gmail.com
-- **Documentation**: See README.md and SYSTEM_DOCUMENTATION.md
-- **Admin Panel**: Contact your system administrator
+- **Feedback Email**: feedback@garissa.go.ke
+- **Dashboard Issues**: Report through feedback email
+- **Data Questions**: Contact the County Project Monitoring Office
 
 ### Feature Requests
-- Submit feature requests through your administrator
-- Include detailed description of desired functionality
-- Provide use case examples
+Submit feature requests through the feedback system. Include:
+- Description of desired feature
+- Use case or benefit
+- Any relevant examples
 
-### Bug Reports
-- Describe the issue in detail
-- Include steps to reproduce
-- Specify browser and operating system
-- Provide screenshots if helpful
+### Reporting Bugs
+When reporting bugs, please include:
+- Description of the problem
+- Steps to reproduce
+- Browser and operating system
+- Screenshots if helpful
 
-## 📚 Additional Resources
+## 📚 Additional Information
 
-### Training Materials
-- **Video Tutorials**: Available through your administrator
-- **User Guides**: Department-specific guides available
-- **Best Practices**: Document available for download
+### Data Source
+- All project data is stored in Google Sheets
+- Data is automatically synced with the dashboard
+- Updates to Google Sheets are reflected in the dashboard
 
-### Data Export
-- **Project Reports**: Export project data to Excel/CSV
-- **Custom Reports**: Request specific data exports
-- **Backup Procedures**: Regular data backup procedures
+### Data Privacy
+- All project information shown is publicly available
+- No personal or sensitive information is displayed
+- Dashboard promotes transparency in county governance
 
-### System Updates
-- **Version History**: Track system improvements
-- **Feature Updates**: New functionality announcements
-- **Maintenance Schedule**: Planned system maintenance windows
+### Accessibility
+- Dashboard is designed to be accessible
+- Works with screen readers
+- Keyboard navigation supported
+- Color coding includes text labels for accessibility
+
+### Mobile Access
+- Dashboard is fully responsive
+- Works on smartphones and tablets
+- Touch-friendly interface
+- Optimized map controls for mobile
 
 ---
 
-**Last Updated**: December 2024  
-**Version**: 1.0.0  
-**For Garissa County Government Use**
+## 🎯 Quick Reference Guide
+
+### Common Tasks
+
+**View all projects**: Open dashboard → Projects load automatically
+
+**Find a specific project**: Use the search box or filters
+
+**See project locations**: Click "Map View" tab
+
+**Generate a report**: Click "Reports" tab → Select report type
+
+**Send feedback**: Click "Send Feedback" button in header
+
+**Filter by status**: Use "Status" dropdown filter
+
+**Filter by location**: Use "Sub-County" or "Ward" filters
+
+**Export data**: Click "Export Excel" in List View
+
+**Clear all filters**: Click "Clear All Filters" button
+
+---
+
+**Last Updated**: January 2025  
+**Version**: 2.0.0  
+**For Garissa County Citizens and Stakeholders**

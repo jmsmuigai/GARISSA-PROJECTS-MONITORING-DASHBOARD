@@ -15,8 +15,9 @@ const GARISSA_COUNTY_BOUNDS = [
     [0.2, 40.2]   // Northeast
 ];
 
-// Google Sheets Configuration
+// Google Sheets Configuration - PERMANENT CONNECTION
 const GOOGLE_SHEETS_ID = '1-DNepBW2my39yooT_K6uTnRRIMJv0NtI';
+const GOOGLE_SHEETS_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/edit`;
 
 // Sub-counties and wards in Garissa County
 const SUB_COUNTIES = [
@@ -165,6 +166,10 @@ async function initializeApp() {
                     updateFeedbackCounts();
                     setupEventListeners();
                     
+                    // Update projects count in reports view
+                    const countEl = document.getElementById('projects-count-reports');
+                    if (countEl) countEl.textContent = `${allProjects.length} projects loaded`;
+                    
                     // Load fresh data in background (non-blocking)
                     loadProjectsFromGoogleSheets().then(async (newProjects) => {
                         if (newProjects && newProjects.length > allProjects.length) {
@@ -255,71 +260,89 @@ async function initializeApp() {
     }
 }
 
-// Load projects from Google Sheets - FAST and OPTIMIZED
+// Load projects from Google Sheets - PERMANENT CONNECTION WITH ALL PROJECTS
 async function loadProjectsFromGoogleSheets() {
-    const GOOGLE_SHEETS_ID = '1-DNepBW2my39yooT_K6uTnRRIMJv0NtI';
+    console.log('🔄 Loading ALL projects from Google Sheets (permanent connection)...');
     
-    // Prioritize most likely sheet names first
+    // Prioritize most likely sheet names first - based on user's sheet structure
     const sheetNames = [
         'Summary List for Dashboard',
-        'Project Stocktaking Template',
         'Sheet1',
+        'Project Stocktaking Template',
         'Projects',
-        'Data'
+        'Data',
+        'Dashboard Data'
     ];
     
     let allLoadedProjects = [];
     
-    // Try sheets in parallel with timeout per sheet (FASTER)
+    // Try sheets in parallel with longer timeout to ensure we get ALL data
     const sheetPromises = sheetNames.map(async (sheetName) => {
         try {
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+            // Try multiple CSV export formats to ensure we get all data
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&tq=SELECT *`;
             
             const response = await Promise.race([
                 fetch(csvUrl, { 
                     mode: 'cors',
-                    cache: 'no-cache',
-                    headers: { 'Accept': 'text/csv' }
+                    cache: 'no-store', // Always fetch fresh data
+                    headers: { 
+                        'Accept': 'text/csv',
+                        'Cache-Control': 'no-cache'
+                    }
                 }),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Sheet timeout')), 8000)
+                    setTimeout(() => reject(new Error('Sheet timeout')), 15000) // Increased timeout for large sheets
                 )
             ]);
             
-            if (!response.ok) return null;
+            if (!response.ok) {
+                console.warn(`Sheet ${sheetName}: HTTP ${response.status}`);
+                return null;
+            }
             
             const csvText = await response.text();
-            if (!csvText || csvText.trim().length < 50) return null;
+            if (!csvText || csvText.trim().length < 50) {
+                console.warn(`Sheet ${sheetName}: Empty or insufficient data`);
+                return null;
+            }
             
             const projects = parseCSVToProjects(csvText, sheetName);
             if (projects && projects.length > 0) {
-                console.log(`✅ Parsed ${projects.length} projects from ${sheetName}`);
+                console.log(`✅ Parsed ${projects.length} projects from "${sheetName}"`);
                 return projects;
             }
             return null;
         } catch (error) {
-            console.warn(`Sheet ${sheetName} failed:`, error.message);
+            console.warn(`Sheet "${sheetName}" failed:`, error.message);
             return null;
         }
     });
     
-    // Wait for first successful load (don't wait for all)
+    // Wait for ALL sheets to load (we want complete data)
     const results = await Promise.allSettled(sheetPromises);
     
+    let totalFound = 0;
     for (const result of results) {
-        if (result.status === 'fulfilled' && result.value) {
+        if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
             result.value.forEach(newProject => {
+                // More intelligent duplicate detection
                 const exists = allLoadedProjects.find(p => 
-                    p.name === newProject.name && 
-                    p.subcounty === newProject.subcounty &&
-                    Math.abs((p.budget || 0) - (newProject.budget || 0)) < 100
+                    (p.name && newProject.name && p.name.trim().toLowerCase() === newProject.name.trim().toLowerCase()) ||
+                    (p.id && newProject.id && p.id === newProject.id)
                 );
                 if (!exists) {
-                    allLoadedProjects.push(newProject);
+                    // Validate project has minimum required fields
+                    if (newProject.name && newProject.name.trim().length > 2) {
+                        allLoadedProjects.push(newProject);
+                        totalFound++;
+                    }
                 }
             });
         }
     }
+    
+    console.log(`📊 Total unique projects collected: ${allLoadedProjects.length}`);
     
     // If we got some projects, use them (even if not all sheets loaded)
     if (allLoadedProjects.length === 0) {
@@ -1188,20 +1211,410 @@ function switchTab(tabName) {
             }
         }, 100);
     } else if (tabName === 'list') {
-        // Ensure List View shows all projects
-        renderProjects();
-        console.log(`✅ List View: Displaying ${filteredProjects.length} projects`);
+        // Enhanced List View with Excel Panel
+        console.log(`📋 List View: Loading Excel panel with all projects...`);
+        
+        // Always render the Excel table view
+        renderExcelTable();
+        
+        // If no projects loaded, fetch from Google Sheets
+        if (allProjects.length === 0) {
+            console.log('⚠️ No projects in List View, loading from Google Sheets...');
+            loadProjectsFromGoogleSheets().then(async (newProjects) => {
+                if (newProjects && newProjects.length > 0) {
+                    allProjects = newProjects;
+                    filteredProjects = [...allProjects];
+                    console.log(`✅ Loaded ${allProjects.length} projects for Excel Panel`);
+                    
+                    // Update filters with new data
+                    populateFilterDropdowns();
+                    
+                    // Render Excel table
+                    renderExcelTable();
+                    updateStats();
+                    updateMapMarkers();
+                    updateCharts();
+                    
+                    // Update count display
+                    const countEl = document.getElementById('projects-count-display');
+                    if (countEl) countEl.textContent = `${allProjects.length} projects`;
+                }
+            }).catch(err => {
+                console.error('Error loading projects for List View:', err);
+                const container = document.getElementById('excel-table-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="p-8 text-center text-red-600">
+                            <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2"></i>
+                            <p>Error loading projects. Please try refreshing.</p>
+                        </div>
+                    `;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            });
+        } else {
+            // Render with existing data
+            renderExcelTable();
+            const countEl = document.getElementById('projects-count-display');
+            if (countEl) countEl.textContent = `${allProjects.length} projects`;
+            console.log(`✅ List View: Displaying ${allProjects.length} total projects in Excel Panel`);
+        }
+        
+        // Setup Excel table event listeners
+        setupExcelTableListeners();
     } else if (tabName === 'analytics') {
         updateCharts();
     } else if (tabName === 'reports') {
-        // Reports tab is ready
+        // Reports tab - ensure all projects are loaded and ready
+        console.log(`📋 Reports View: ${allProjects.length} total projects available`);
         initializeReportViewing();
+        // Auto-load summary report to show all projects
+        setTimeout(() => {
+            if (allProjects.length > 0 && filteredProjects.length === 0) {
+                // Reset filters when entering reports to show all projects
+                clearFilters();
+            }
+        }, 100);
     }
 }
 
 // Pagination state
 let currentPage = 1;
 const projectsPerPage = 50; // Show 50 projects per page for better performance
+
+// Render Excel Table View - INTEGRATED PANEL
+function renderExcelTable() {
+    const container = document.getElementById('excel-table-container');
+    if (!container) return;
+    
+    const projectsToShow = filteredProjects.length > 0 ? filteredProjects : allProjects;
+    
+    if (projectsToShow.length === 0) {
+        container.innerHTML = `
+            <div class="p-8 text-center text-gray-500">
+                <i data-lucide="folder-x" class="w-12 h-12 mx-auto mb-2"></i>
+                <p>No projects found. Try adjusting your filters.</p>
+            </div>
+        `;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+    
+    // Create scrollable Excel-style table
+    container.innerHTML = `
+        <table class="excel-table">
+            <thead>
+                <tr>
+                    <th class="sticky left-0 bg-gray-100 z-20" style="min-width: 300px;">Project Name</th>
+                    <th style="min-width: 100px;">Status</th>
+                    <th style="min-width: 120px;">Progress</th>
+                    <th style="min-width: 180px;">Department</th>
+                    <th style="min-width: 140px;">Sub-County</th>
+                    <th style="min-width: 140px;">Ward</th>
+                    <th style="min-width: 120px;">Budget</th>
+                    <th style="min-width: 120px;">Expenditure</th>
+                    <th style="min-width: 120px;">Balance</th>
+                    <th style="min-width: 150px;">Funding Source</th>
+                    <th style="min-width: 100px;">Year</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${projectsToShow.map((p, index) => {
+                    const progressPercent = p.budget > 0 ? Math.round((p.expenditure / p.budget) * 100) : 0;
+                    const balance = (p.budget || 0) - (p.expenditure || 0);
+                    const progressColor = progressPercent >= 80 ? 'bg-green-500' : progressPercent >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+                    const projectId = p.id || `project-${index}-${Date.now()}`;
+                    if (!p.id) p.id = projectId;
+                    const statusColor = p.status === 'Completed' ? 'bg-green-100 text-green-800' : 
+                                      p.status === 'Ongoing' ? 'bg-yellow-100 text-yellow-800' : 
+                                      'bg-red-100 text-red-800';
+                    return `
+                        <tr class="project-row" data-project-id="${projectId}" data-project-index="${index}">
+                            <td class="sticky left-0 bg-white z-10 font-medium border-r border-gray-200" style="min-width: 300px;">
+                                ${escapeHtml(p.name || 'Unnamed Project')}
+                            </td>
+                            <td>
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColor}">
+                                    ${p.status || 'Ongoing'}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                                        <div class="${progressColor} h-2 rounded-full" style="width: ${Math.min(progressPercent, 100)}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-700">${progressPercent}%</span>
+                                </div>
+                            </td>
+                            <td class="text-gray-700">${escapeHtml(p.department || 'N/A')}</td>
+                            <td class="text-gray-700">${escapeHtml(p.subcounty || 'N/A')}</td>
+                            <td class="text-gray-700">${escapeHtml(p.ward || 'N/A')}</td>
+                            <td class="font-semibold text-gray-900">${formatCurrency(p.budget || 0)}</td>
+                            <td class="font-medium text-gray-800">${formatCurrency(p.expenditure || 0)}</td>
+                            <td class="font-medium ${balance >= 0 ? 'text-green-700' : 'text-red-700'}">${formatCurrency(balance)}</td>
+                            <td class="text-gray-600 text-sm">${escapeHtml(p.source_of_funds || 'N/A')}</td>
+                            <td class="text-gray-600">${p.year || 'N/A'}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    // Update count
+    const countEl = document.getElementById('projects-count-display');
+    if (countEl) countEl.textContent = `${projectsToShow.length} projects`;
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Setup Excel table event listeners
+function setupExcelTableListeners() {
+    // Row click handler
+    document.addEventListener('click', (e) => {
+        const row = e.target.closest('.project-row');
+        if (row) {
+            const projectId = row.dataset.projectId;
+            const projectIndex = parseInt(row.dataset.projectIndex);
+            
+            // Remove previous selection
+            document.querySelectorAll('.project-row').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            
+            // Show project summary
+            const projectsToShow = filteredProjects.length > 0 ? filteredProjects : allProjects;
+            const project = projectsToShow[projectIndex];
+            if (project) {
+                showProjectSummary(project);
+            }
+        }
+    });
+    
+    // Excel search
+    const excelSearch = document.getElementById('excel-search');
+    if (excelSearch) {
+        excelSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const statusFilter = document.getElementById('excel-status-filter')?.value || '';
+            
+            if (searchTerm || statusFilter) {
+                filteredProjects = allProjects.filter(p => {
+                    const matchesSearch = !searchTerm || 
+                        (p.name || '').toLowerCase().includes(searchTerm) ||
+                        (p.department || '').toLowerCase().includes(searchTerm) ||
+                        (p.subcounty || '').toLowerCase().includes(searchTerm) ||
+                        (p.ward || '').toLowerCase().includes(searchTerm);
+                    const matchesStatus = !statusFilter || p.status === statusFilter;
+                    return matchesSearch && matchesStatus;
+                });
+            } else {
+                filteredProjects = [...allProjects];
+            }
+            
+            renderExcelTable();
+        });
+    }
+    
+    // Excel status filter
+    const excelStatusFilter = document.getElementById('excel-status-filter');
+    if (excelStatusFilter) {
+        excelStatusFilter.addEventListener('change', () => {
+            const excelSearch = document.getElementById('excel-search');
+            if (excelSearch) excelSearch.dispatchEvent(new Event('input'));
+        });
+    }
+    
+    // Close summary panel
+    const closeSummary = document.getElementById('close-summary');
+    if (closeSummary) {
+        closeSummary.addEventListener('click', () => {
+            const panel = document.getElementById('project-summary-panel');
+            if (panel) panel.classList.add('hidden');
+        });
+    }
+}
+
+// Show project summary in side panel
+function showProjectSummary(project) {
+    const panel = document.getElementById('project-summary-panel');
+    const content = document.getElementById('project-summary-content');
+    
+    if (!panel || !content) return;
+    
+    // Show panel
+    panel.classList.remove('hidden');
+    
+    const progressPercent = project.budget > 0 ? Math.round((project.expenditure / project.budget) * 100) : 0;
+    const balance = (project.budget || 0) - (project.expenditure || 0);
+    const statusColor = project.status === 'Completed' ? 'bg-green-100 text-green-800 border-green-300' : 
+                       project.status === 'Ongoing' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 
+                       'bg-red-100 text-red-800 border-red-300';
+    
+    content.innerHTML = `
+        <div class="space-y-6">
+            <!-- Header -->
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">${escapeHtml(project.name || 'Unnamed Project')}</h2>
+                <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold border-2 ${statusColor}">
+                    ${project.status || 'Ongoing'}
+                </span>
+            </div>
+            
+            <!-- Progress Card -->
+            <div class="bg-white rounded-lg shadow-md p-4 border-l-4 ${project.status === 'Completed' ? 'border-green-500' : project.status === 'Ongoing' ? 'border-yellow-500' : 'border-red-500'}">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i data-lucide="activity" class="w-5 h-5 mr-2"></i> Progress
+                </h3>
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                    <div class="bg-gradient-to-r from-red-600 to-green-600 h-4 rounded-full flex items-center justify-end pr-2" style="width: ${Math.min(progressPercent, 100)}%">
+                        <span class="text-xs font-bold text-white">${progressPercent}%</span>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">${formatCurrency(project.expenditure || 0)} of ${formatCurrency(project.budget || 0)}</p>
+            </div>
+            
+            <!-- Budget Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i data-lucide="dollar-sign" class="w-5 h-5 mr-2"></i> Budget Details
+                </h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Budget:</span>
+                        <span class="font-bold text-gray-800">${formatCurrency(project.budget || 0)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Expenditure:</span>
+                        <span class="font-medium text-gray-800">${formatCurrency(project.expenditure || 0)}</span>
+                    </div>
+                    <div class="flex justify-between pt-2 border-t border-gray-200">
+                        <span class="text-gray-600 font-semibold">Balance:</span>
+                        <span class="font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}">${formatCurrency(balance)}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Location Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i data-lucide="map-pin" class="w-5 h-5 mr-2"></i> Location
+                </h3>
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-xs text-gray-500">Sub-County</span>
+                        <p class="font-medium text-gray-800">${escapeHtml(project.subcounty || 'N/A')}</p>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">Ward</span>
+                        <p class="font-medium text-gray-800">${escapeHtml(project.ward || 'N/A')}</p>
+                    </div>
+                    ${project.location ? `
+                    <div>
+                        <span class="text-xs text-gray-500">Address</span>
+                        <p class="font-medium text-gray-800 text-sm">${escapeHtml(project.location)}</p>
+                    </div>
+                    ` : ''}
+                    ${project.latitude && project.longitude ? `
+                    <button onclick="window.open('https://www.google.com/maps?q=${project.latitude},${project.longitude}', '_blank')" 
+                            class="mt-2 w-full bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 text-sm">
+                        <i data-lucide="map" class="w-4 h-4"></i>
+                        <span>View on Map</span>
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Department & Funding Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i data-lucide="building" class="w-5 h-5 mr-2"></i> Project Details
+                </h3>
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-xs text-gray-500">Department</span>
+                        <p class="font-medium text-gray-800">${escapeHtml(project.department || 'N/A')}</p>
+                    </div>
+                    ${project.source_of_funds ? `
+                    <div>
+                        <span class="text-xs text-gray-500">Funding Source</span>
+                        <p class="font-medium text-gray-800">${escapeHtml(project.source_of_funds)}</p>
+                    </div>
+                    ` : ''}
+                    ${project.year ? `
+                    <div>
+                        <span class="text-xs text-gray-500">Year</span>
+                        <p class="font-medium text-gray-800">${project.year}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Timeline Card -->
+            ${project.start_date || project.completion_date ? `
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i data-lucide="calendar" class="w-5 h-5 mr-2"></i> Timeline
+                </h3>
+                <div class="space-y-2">
+                    ${project.start_date ? `
+                    <div>
+                        <span class="text-xs text-gray-500">Start Date</span>
+                        <p class="font-medium text-gray-800">${escapeHtml(project.start_date)}</p>
+                    </div>
+                    ` : ''}
+                    ${project.completion_date ? `
+                    <div>
+                        <span class="text-xs text-gray-500">Completion Date</span>
+                        <p class="font-medium text-gray-800">${escapeHtml(project.completion_date)}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Description -->
+            ${project.description ? `
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i data-lucide="file-text" class="w-5 h-5 mr-2"></i> Description
+                </h3>
+                <p class="text-gray-700 text-sm leading-relaxed">${escapeHtml(project.description)}</p>
+            </div>
+            ` : ''}
+            
+            <!-- Action Buttons -->
+            <div class="space-y-2">
+                <button onclick="window.showProjectDetailsFromSummary('${project.id || ''}')" 
+                        class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                    <span>View Full Details</span>
+                </button>
+                <button onclick="showFeedbackModal('${project.id || ''}')" 
+                        class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    <span>Send Feedback</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Helper function to show project details from summary
+window.showProjectDetailsFromSummary = function(projectId) {
+    const projectsToShow = filteredProjects.length > 0 ? filteredProjects : allProjects;
+    const project = projectsToShow.find(p => p.id === projectId) || allProjects.find(p => p.id === projectId);
+    if (project) {
+        showProjectDetails(project);
+    }
+};
+
+// Make globally available
+window.showProjectSummary = showProjectSummary;
+if (typeof window.showProjectDetails === 'undefined') {
+    window.showProjectDetails = showProjectDetails;
+}
 
 // Render projects list with pagination
 function renderProjects() {
@@ -1972,84 +2385,242 @@ function showProjectDetails(project) {
     }
 }
 
-// Report viewing panel (instead of download)
+// Report viewing panel - ENHANCED to load and show ALL projects
 function initializeReportViewing() {
-    // Report cards - show in panel instead of downloading
+    // Report cards - show in panel with ALL projects
     document.querySelectorAll('.report-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', async () => {
             const reportType = card.dataset.report;
+            console.log(`📊 Loading ${reportType} report with all projects...`);
+            
+            // Ensure we have the latest data
+            if (allProjects.length === 0) {
+                console.log('⚠️ No projects loaded, fetching from Google Sheets...');
+                showLoading();
+                try {
+                    const freshProjects = await loadProjectsFromGoogleSheets();
+                    if (freshProjects && freshProjects.length > 0) {
+                        allProjects = freshProjects;
+                        filteredProjects = [...allProjects];
+                        console.log(`✅ Loaded ${allProjects.length} projects for report`);
+                    }
+                } catch (error) {
+                    console.error('Error loading projects for report:', error);
+                } finally {
+                    hideLoading();
+                }
+            }
+            
             showReportInPanel(reportType);
         });
     });
     
     // Close report modal
     const closeReport = document.getElementById('close-report');
-    if (closeReport) closeReport.addEventListener('click', () => {
-        document.getElementById('report-modal').classList.add('hidden');
-    });
+    if (closeReport) {
+        closeReport.addEventListener('click', () => {
+            document.getElementById('report-modal').classList.add('hidden');
+        });
+    }
+    
+    // Also close on background click
+    const modal = document.getElementById('report-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    }
 }
 
 function showReportInPanel(reportType) {
+    // Use ALL PROJECTS for reports (not just filtered) - citizens need to see everything
     let projects = [];
+    
+    // For reports, show ALL projects unless specifically filtered
+    const sourceProjects = allProjects.length > 0 ? allProjects : filteredProjects;
     
     switch(reportType) {
         case 'summary':
-            projects = filteredProjects;
+            // Summary shows ALL projects
+            projects = sourceProjects;
             break;
         case 'completed':
-            projects = filteredProjects.filter(p => p.status === 'Completed');
+            projects = sourceProjects.filter(p => p.status === 'Completed');
             break;
         case 'ongoing':
-            projects = filteredProjects.filter(p => p.status === 'Ongoing');
+            projects = sourceProjects.filter(p => p.status === 'Ongoing');
             break;
         case 'stalled':
-            projects = filteredProjects.filter(p => p.status === 'Stalled');
+            projects = sourceProjects.filter(p => p.status === 'Stalled');
             break;
         case 'budget':
-            projects = filteredProjects;
+            projects = sourceProjects; // All projects for budget analysis
             break;
         case 'location':
-            projects = filteredProjects;
+            projects = sourceProjects; // All projects for location analysis
             break;
+        default:
+            projects = sourceProjects;
     }
     
-    // Update report count
-    document.getElementById('report-count').textContent = projects.length;
+    console.log(`📊 Showing ${reportType} report with ${projects.length} projects`);
     
-    // Generate report table
+    // Update report count
+    const reportCountEl = document.getElementById('report-count');
+    if (reportCountEl) {
+        reportCountEl.textContent = projects.length;
+    }
+    
+    // Generate comprehensive report table with ALL project details
     const reportContent = document.getElementById('report-content');
-    reportContent.innerHTML = `
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expenditure</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                ${projects.map(p => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(p.name)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="filter-badge status-${p.status.toLowerCase()}">${p.status}</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(p.department || 'N/A')}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(p.subcounty || 'N/A')}${p.ward ? ` - ${escapeHtml(p.ward)}` : ''}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(p.budget || 0)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(p.expenditure || 0)}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
+    
+    if (projects.length === 0) {
+        reportContent.innerHTML = `
+            <div class="text-center py-12">
+                <i data-lucide="folder-x" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+                <p class="text-gray-600 text-lg">No projects found for this report.</p>
+                <p class="text-gray-500 text-sm mt-2">Try refreshing the page or checking your connection to Google Sheets.</p>
+                <button onclick="location.reload()" class="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+                    Refresh Data
+                </button>
+            </div>
+        `;
+    } else {
+        // Calculate progress and impact metrics
+        const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+        const totalExpenditure = projects.reduce((sum, p) => sum + (p.expenditure || 0), 0);
+        const avgProgress = projects.length > 0 ? Math.round((totalExpenditure / totalBudget) * 100) : 0;
+        
+        reportContent.innerHTML = `
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-600 font-medium">Total Projects</p>
+                    <p class="text-2xl font-bold text-blue-800">${projects.length}</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <p class="text-sm text-green-600 font-medium">Total Budget</p>
+                    <p class="text-2xl font-bold text-green-800">${formatCurrency(totalBudget)}</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <p class="text-sm text-purple-600 font-medium">Total Expenditure</p>
+                    <p class="text-2xl font-bold text-purple-800">${formatCurrency(totalExpenditure)}</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p class="text-sm text-yellow-600 font-medium">Average Progress</p>
+                    <p class="text-2xl font-bold text-yellow-800">${avgProgress}%</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 border border-gray-300">
+                    <thead class="bg-gradient-to-r from-red-600 to-green-600 text-white">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky left-0 bg-red-600 z-10">Project Name</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Progress</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Department</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Sub-County</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Ward</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Budget</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Expenditure</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Balance</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Funding Source</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Year</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${projects.map((p, index) => {
+                            const progressPercent = p.budget > 0 ? Math.round((p.expenditure / p.budget) * 100) : 0;
+                            const balance = (p.budget || 0) - (p.expenditure || 0);
+                            const progressColor = progressPercent >= 80 ? 'bg-green-500' : progressPercent >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+                            const projectId = p.id || `project-${index}-${Date.now()}`;
+                            // Store project data in a way we can retrieve it
+                            if (!p.id) p.id = projectId;
+                            return `
+                                <tr class="hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} cursor-pointer project-row" data-project-id="${projectId}" onclick="handleReportRowClick('${projectId}')">
+                                    <td class="px-4 py-3 whitespace-normal text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10 border-r border-gray-200">
+                                        ${escapeHtml(p.name || 'Unnamed Project')}
+                                        ${p.description ? `<br><span class="text-xs text-gray-500">${escapeHtml(p.description.substring(0, 80))}${p.description.length > 80 ? '...' : ''}</span>` : ''}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="filter-badge status-${(p.status || 'Ongoing').toLowerCase()} px-2 py-1">${p.status || 'Ongoing'}</span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="flex items-center space-x-2">
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="${progressColor} h-2 rounded-full" style="width: ${Math.min(progressPercent, 100)}%"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-gray-700">${progressPercent}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${escapeHtml(p.department || 'N/A')}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${escapeHtml(p.subcounty || 'N/A')}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${escapeHtml(p.ward || 'N/A')}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">${formatCurrency(p.budget || 0)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">${formatCurrency(p.expenditure || 0)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm ${balance >= 0 ? 'text-green-700' : 'text-red-700'} font-medium">${formatCurrency(balance)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${escapeHtml(p.source_of_funds || 'N/A')}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${p.year || 'N/A'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 flex justify-between items-center">
+                <p class="text-sm text-gray-600">
+                    <strong>Source:</strong> <a href="${GOOGLE_SHEETS_URL}" target="_blank" class="text-blue-600 hover:underline">Google Sheets - Garissa County Projects</a>
+                </p>
+                <button onclick="exportReportToExcel('${reportType}')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Export to Excel</span>
+                </button>
+            </div>
+        `;
+    }
     
     // Show modal
-    document.getElementById('report-modal').classList.remove('hidden');
+    const modal = document.getElementById('report-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+    
+    // Initialize icons
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    
+    // Make showProjectDetails available globally
+    if (typeof window.showProjectDetails === 'undefined') {
+        window.showProjectDetails = showProjectDetails;
+    }
+    
+    // Store projects for row click handler
+    window.reportProjects = projects;
 }
+
+// Handle report row click
+function handleReportRowClick(projectId) {
+    // First try reportProjects (projects in current report)
+    const project = window.reportProjects?.find(p => p.id === projectId);
+    if (project) {
+        showProjectDetails(project);
+        return;
+    }
+    
+    // If not found, try allProjects
+    const allProject = allProjects.find(p => p.id === projectId);
+    if (allProject) {
+        showProjectDetails(allProject);
+        return;
+    }
+    
+    console.warn(`Project with ID ${projectId} not found`);
+}
+
+// Make globally available
+window.handleReportRowClick = handleReportRowClick;
 
 // Search button and filtered view
 function initializeSearchButton() {
@@ -2114,10 +2685,90 @@ function setupEventListeners() {
     
     // Export buttons
     const exportExcel = document.getElementById('export-excel');
-    if (exportExcel) exportExcel.addEventListener('click', exportToExcel);
+    if (exportExcel) exportExcel.addEventListener('click', () => {
+        // Export all projects from list view
+        const dataToExport = filteredProjects.length > 0 ? filteredProjects : allProjects;
+        exportToExcelWithData(dataToExport, 'projects-list');
+    });
     
     const exportPdf = document.getElementById('export-pdf');
     if (exportPdf) exportPdf.addEventListener('click', exportToPDF);
+    
+    // Make exportReportToExcel globally available
+    window.exportReportToExcel = exportReportToExcel;
+    
+    // Refresh buttons
+    const refreshProjectsBtn = document.getElementById('refresh-projects-btn');
+    if (refreshProjectsBtn) {
+        refreshProjectsBtn.addEventListener('click', async () => {
+            refreshProjectsBtn.disabled = true;
+            refreshProjectsBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Refreshing...</span>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            showLoading();
+            try {
+                const freshProjects = await loadProjectsFromGoogleSheets();
+                if (freshProjects && freshProjects.length > 0) {
+                    allProjects = freshProjects;
+                    filteredProjects = [...allProjects];
+                    populateFilterDropdowns();
+                    updateStats();
+                    updateCharts();
+                    
+                    // Update count in reports view
+                    const countEl = document.getElementById('projects-count-reports');
+                    if (countEl) countEl.textContent = `${allProjects.length} projects loaded`;
+                    
+                    alert(`✅ Successfully refreshed! Loaded ${allProjects.length} projects from Google Sheets.`);
+                } else {
+                    alert('⚠️ No projects found. Please check your Google Sheets connection.');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                alert('❌ Error refreshing data. Please try again later.');
+            } finally {
+                hideLoading();
+                refreshProjectsBtn.disabled = false;
+                refreshProjectsBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> <span>Refresh Data</span>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+    }
+    
+    const refreshListBtn = document.getElementById('refresh-list-btn');
+    if (refreshListBtn) {
+        refreshListBtn.addEventListener('click', async () => {
+            refreshListBtn.disabled = true;
+            refreshListBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Refreshing...</span>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            showLoading();
+            try {
+                const freshProjects = await loadProjectsFromGoogleSheets();
+                if (freshProjects && freshProjects.length > 0) {
+                    allProjects = freshProjects;
+                    filteredProjects = [...allProjects];
+                    populateFilterDropdowns();
+                    renderExcelTable(); // Use Excel table view
+                    updateStats();
+                    updateMapMarkers();
+                    updateCharts();
+                    
+                    console.log(`✅ List View refreshed: ${allProjects.length} projects loaded`);
+                } else {
+                    alert('⚠️ No projects found. Please check your Google Sheets connection.');
+                }
+            } catch (error) {
+                console.error('Refresh error:', error);
+                alert('❌ Error refreshing data. Please try again later.');
+            } finally {
+                hideLoading();
+                refreshListBtn.disabled = false;
+                refreshListBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> <span>Refresh</span>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+    }
     
     const generateMapReport = document.getElementById('generate-map-report');
     if (generateMapReport) generateMapReport.addEventListener('click', generateMapReport);
@@ -2129,33 +2780,106 @@ function setupEventListeners() {
     }
 }
 
-// Export to Excel
+// Export report to Excel (enhanced for reports)
+function exportReportToExcel(reportType) {
+    let projects = [];
+    const sourceProjects = allProjects.length > 0 ? allProjects : filteredProjects;
+    
+    switch(reportType) {
+        case 'summary':
+            projects = sourceProjects;
+            break;
+        case 'completed':
+            projects = sourceProjects.filter(p => p.status === 'Completed');
+            break;
+        case 'ongoing':
+            projects = sourceProjects.filter(p => p.status === 'Ongoing');
+            break;
+        case 'stalled':
+            projects = sourceProjects.filter(p => p.status === 'Stalled');
+            break;
+        case 'budget':
+        case 'location':
+        default:
+            projects = sourceProjects;
+    }
+    
+    exportToExcelWithData(projects, `${reportType}-report`);
+}
+
+// Export to Excel - ENHANCED with all project data
 function exportToExcel() {
+    exportToExcelWithData(filteredProjects.length > 0 ? filteredProjects : allProjects, 'projects');
+}
+
+function exportToExcelWithData(projects, filename) {
     if (typeof XLSX === 'undefined') {
         alert('Excel export library not loaded. Please refresh the page.');
         return;
     }
     
-    const data = filteredProjects.map(p => ({
-        'Project Name': p.name,
-        'Description': p.description,
-        'Status': p.status,
-        'Department': p.department,
-        'Sub-County': p.subcounty,
-        'Ward': p.ward,
-        'Budget (KSh)': p.budget,
-        'Expenditure (KSh)': p.expenditure,
-        'Source of Funds': p.source_of_funds,
-        'Start Date': p.start_date,
-        'Completion Date': p.completion_date,
-        'Location': p.location
-    }));
+    if (!projects || projects.length === 0) {
+        alert('No projects to export.');
+        return;
+    }
+    
+    const data = projects.map(p => {
+        const progress = p.budget > 0 ? Math.round((p.expenditure / p.budget) * 100) : 0;
+        const balance = (p.budget || 0) - (p.expenditure || 0);
+        return {
+            'Project Name': p.name || '',
+            'Description': p.description || '',
+            'Status': p.status || 'Ongoing',
+            'Progress (%)': progress,
+            'Department': p.department || '',
+            'Sub-County': p.subcounty || '',
+            'Ward': p.ward || '',
+            'Location': p.location || '',
+            'Budget (KSh)': p.budget || 0,
+            'Expenditure (KSh)': p.expenditure || 0,
+            'Balance (KSh)': balance,
+            'Source of Funds': p.source_of_funds || '',
+            'Start Date': p.start_date || '',
+            'Completion Date': p.completion_date || '',
+            'Year': p.year || '',
+            'Contractor': p.contractor || '',
+            'Beneficiaries': p.beneficiaries || '',
+            'Latitude': p.latitude || '',
+            'Longitude': p.longitude || ''
+        };
+    });
     
     try {
         const ws = XLSX.utils.json_to_sheet(data);
+        
+        // Set column widths for better readability
+        const colWidths = [
+            { wch: 30 }, // Project Name
+            { wch: 40 }, // Description
+            { wch: 12 }, // Status
+            { wch: 10 }, // Progress
+            { wch: 20 }, // Department
+            { wch: 18 }, // Sub-County
+            { wch: 18 }, // Ward
+            { wch: 25 }, // Location
+            { wch: 15 }, // Budget
+            { wch: 15 }, // Expenditure
+            { wch: 15 }, // Balance
+            { wch: 20 }, // Source of Funds
+            { wch: 12 }, // Start Date
+            { wch: 12 }, // Completion Date
+            { wch: 8 },  // Year
+            { wch: 20 }, // Contractor
+            { wch: 15 }, // Beneficiaries
+            { wch: 12 }, // Latitude
+            { wch: 12 }  // Longitude
+        ];
+        ws['!cols'] = colWidths;
+        
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Projects');
-        XLSX.writeFile(wb, `garissa-projects-${new Date().toISOString().split('T')[0]}.xlsx`);
+        XLSX.writeFile(wb, `garissa-${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+        console.log(`✅ Exported ${data.length} projects to Excel`);
     } catch (error) {
         console.error('Export error:', error);
         alert('Error exporting to Excel. Please try again.');

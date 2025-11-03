@@ -64,6 +64,41 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+        
+        /* Excel Table Styles */
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .excel-table th {
+            background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #374151;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .excel-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+        .excel-table tr {
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .excel-table tr:hover {
+            background-color: #f9fafb;
+        }
+        .excel-table tr.selected {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -292,25 +327,70 @@
                 </div>
             </div>
 
-            <!-- List View -->
-            <div id="list-tab" class="tab-content p-6 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xl font-bold text-gray-800">All Projects</h3>
-                    <div class="flex space-x-2">
-                        <button id="export-excel" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            <span>Export Excel</span>
-                        </button>
-                        <button id="export-pdf" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2">
-                            <i data-lucide="file-text" class="w-4 h-4"></i>
-                            <span>Export PDF</span>
-                        </button>
+            <!-- List View - INTEGRATED EXCEL PANEL -->
+            <div id="list-tab" class="tab-content p-0 hidden">
+                <div class="flex h-[calc(100vh-250px)]">
+                    <!-- Left Panel: Scrollable Excel Data -->
+                    <div class="flex-1 flex flex-col border-r border-gray-300 bg-white">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between p-4 border-b border-gray-300 bg-gradient-to-r from-red-600 to-green-600 text-white">
+                            <div>
+                                <h3 class="text-xl font-bold">All Projects Database</h3>
+                                <p class="text-sm text-white/90 mt-1">
+                                    <i data-lucide="database" class="w-4 h-4 inline mr-1"></i>
+                                    <span>Live from <a href="https://docs.google.com/spreadsheets/d/1-DNepBW2my39yooT_K6uTnRRIMJv0NtI/edit" target="_blank" class="underline font-semibold">Google Sheets</a></span>
+                                    <span class="mx-2">•</span>
+                                    <span id="projects-count-display" class="font-bold">Loading...</span>
+                                </p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="refresh-list-btn" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                    <span>Refresh</span>
+                                </button>
+                                <button id="export-excel" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    <span>Export</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Search and Quick Filters -->
+                        <div class="p-4 bg-gray-50 border-b border-gray-200">
+                            <div class="flex space-x-2 mb-2">
+                                <input type="text" id="excel-search" placeholder="Quick search projects..." 
+                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                                <select id="excel-status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600">
+                                    <option value="">All Status</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Ongoing">Ongoing</option>
+                                    <option value="Stalled">Stalled</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Scrollable Excel Table -->
+                        <div id="excel-table-container" class="flex-1 overflow-auto">
+                            <div class="p-4 text-center text-gray-500">
+                                <i data-lucide="loader" class="w-8 h-8 mx-auto animate-spin mb-2"></i>
+                                <p>Loading projects from Google Sheets...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Panel: Project Summary -->
+                    <div id="project-summary-panel" class="w-96 bg-gray-50 border-l border-gray-300 flex flex-col hidden">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 flex items-center justify-between">
+                            <h3 class="text-lg font-bold">Project Summary</h3>
+                            <button id="close-summary" class="text-white hover:text-gray-200">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div id="project-summary-content" class="flex-1 overflow-y-auto p-6">
+                            <p class="text-gray-500 text-center mt-8">Select a project to view details</p>
+                        </div>
                     </div>
                 </div>
-                <div id="projects-container" class="space-y-4">
-                    <!-- Projects will be loaded here -->
-                </div>
-                <div id="projects-pagination" class="mt-6 flex justify-center space-x-2"></div>
             </div>
 
             <!-- Analytics View -->
@@ -338,7 +418,21 @@
 
             <!-- Reports View -->
             <div id="reports-tab" class="tab-content p-6 hidden">
-                <h3 class="text-xl font-bold text-gray-800 mb-6">Generate Reports</h3>
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Generate Reports</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            <i data-lucide="database" class="w-4 h-4 inline mr-1"></i>
+                            <span>Connected to: <a href="https://docs.google.com/spreadsheets/d/1-DNepBW2my39yooT_K6uTnRRIMJv0NtI/edit" target="_blank" class="text-blue-600 hover:underline">Google Sheets</a></span>
+                            <span class="mx-2">•</span>
+                            <span id="projects-count-reports" class="font-semibold text-gray-800">0 projects loaded</span>
+                        </p>
+                    </div>
+                    <button id="refresh-projects-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>Refresh Data</span>
+                    </button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow report-card" data-report="summary">
                         <i data-lucide="file-text" class="w-12 h-12 mb-4"></i>

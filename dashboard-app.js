@@ -240,7 +240,11 @@ async function loadProjectsFromGoogleSheets() {
         try {
             const projects = await method();
             if (projects && projects.length > 0) {
-                allProjects = projects.map(project => enhanceProjectWithCoordinates(project));
+                allProjects = projects.map((p, index) => {
+                    const enhanced = enhanceProjectWithCoordinates(p);
+                    if (!enhanced.id) enhanced.id = `project-${index}-${Date.now()}`;
+                    return enhanced;
+                });
                 console.log(`✅ Loaded ${allProjects.length} projects using method`);
                 return;
             }

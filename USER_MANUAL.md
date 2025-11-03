@@ -51,8 +51,6 @@ The dashboard supports three languages for all citizens:
 
 ## 📊 Dashboard Overview
 
-## 📊 Dashboard Overview
-
 The Garissa County Projects Dashboard provides transparent, real-time monitoring of all county development projects. The dashboard is organized into several main sections:
 
 ### Summary Statistics

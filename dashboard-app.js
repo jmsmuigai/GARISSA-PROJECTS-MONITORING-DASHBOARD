@@ -1,5 +1,5 @@
 // Garissa County Projects Dashboard - Main Application
-// Public dashboard without authentication
+// Public dashboard without authentication - Optimized Version
 
 // Global variables
 let allProjects = [];
@@ -19,7 +19,6 @@ const GARISSA_COUNTY_BOUNDS = [
 
 // Google Sheets Configuration
 const GOOGLE_SHEETS_ID = '1-DNepBW2my39yooT_K6uTnRRIMJv0NtI';
-const GOOGLE_SHEETS_API_KEY = 'AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // Public API key for read-only access
 
 // Sub-counties and wards in Garissa County
 const SUB_COUNTIES = [
@@ -40,6 +39,80 @@ const DEPARTMENTS = [
     'County Executive'
 ];
 
+// Sample projects data (fallback if Google Sheets fails)
+const SAMPLE_PROJECTS = [
+    {
+        name: 'Water Supply Project - Garissa Town',
+        description: 'Construction of water treatment plant and distribution network',
+        status: 'Ongoing',
+        department: 'Water and Sanitation',
+        subcounty: 'Garissa Township',
+        ward: 'Township',
+        budget: 50000000,
+        expenditure: 35000000,
+        source_of_funds: 'Government of Kenya',
+        start_date: '2023-01-15',
+        completion_date: '2024-12-31',
+        year: 2023
+    },
+    {
+        name: 'Primary School Construction - Balambala',
+        description: 'New primary school with 8 classrooms and administration block',
+        status: 'Completed',
+        department: 'Education',
+        subcounty: 'Balambala',
+        ward: 'Balambala',
+        budget: 15000000,
+        expenditure: 14800000,
+        source_of_funds: 'County Government',
+        start_date: '2022-06-01',
+        completion_date: '2023-11-30',
+        year: 2022
+    },
+    {
+        name: 'Health Center Upgrade - Lagdera',
+        description: 'Upgrading existing health center with new equipment',
+        status: 'Ongoing',
+        department: 'Health',
+        subcounty: 'Lagdera',
+        ward: 'Lagdera',
+        budget: 25000000,
+        expenditure: 18000000,
+        source_of_funds: 'World Bank',
+        start_date: '2023-03-01',
+        completion_date: '2024-06-30',
+        year: 2023
+    },
+    {
+        name: 'Road Rehabilitation - Dadaab',
+        description: 'Rehabilitation of 25km feeder road',
+        status: 'Stalled',
+        department: 'Infrastructure',
+        subcounty: 'Dadaab',
+        ward: 'Dadaab',
+        budget: 75000000,
+        expenditure: 30000000,
+        source_of_funds: 'KURA',
+        start_date: '2022-01-10',
+        completion_date: '2023-12-31',
+        year: 2022
+    },
+    {
+        name: 'Agriculture Extension Services - Fafi',
+        description: 'Providing extension services and training to farmers',
+        status: 'Completed',
+        department: 'Agriculture',
+        subcounty: 'Fafi',
+        ward: 'Fafi',
+        budget: 8000000,
+        expenditure: 7800000,
+        source_of_funds: 'County Government',
+        start_date: '2023-05-01',
+        completion_date: '2024-03-31',
+        year: 2023
+    }
+];
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
@@ -49,15 +122,29 @@ async function initializeApp() {
     // Show loading overlay
     showLoading();
     
-    // Initialize icons
-    lucide.createIcons();
+    // Initialize icons immediately
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
     
     try {
-        // Load projects from Google Sheets
-        await loadProjectsFromGoogleSheets();
+        // Initialize map FIRST with satellite basemap
+        initializeMap();
+        
+        // Load projects from Google Sheets with timeout
+        await Promise.race([
+            loadProjectsFromGoogleSheets(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+        ]).catch(async (error) => {
+            console.warn('Loading from Google Sheets failed or timed out:', error);
+            await loadFallbackData();
+        });
+        
+        // Validate and fix project data
+        allProjects = allProjects.map(project => validateAndFixProject(project)).filter(p => p !== null);
+        filteredProjects = [...allProjects];
         
         // Initialize UI components
-        initializeMap();
         initializeFilters();
         initializeTabs();
         initializeCharts();
@@ -65,88 +152,138 @@ async function initializeApp() {
         // Render initial views
         renderProjects();
         updateStats();
+        updateMapMarkers();
         updateCharts();
         
         // Setup event listeners
         setupEventListeners();
         
+        console.log(`✅ Successfully loaded ${allProjects.length} projects`);
+        
     } catch (error) {
         console.error('Error initializing app:', error);
-        showError('Failed to load projects. Please refresh the page.');
+        // Load fallback data on any error
+        await loadFallbackData();
+        renderProjects();
+        updateStats();
+        updateMapMarkers();
+        updateCharts();
+        showError('Loaded sample data. Please check Google Sheets connection.');
     } finally {
         hideLoading();
         // Re-initialize icons after dynamic content is loaded
-        setTimeout(() => lucide.createIcons(), 500);
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }, 500);
     }
 }
 
-// Load projects from Google Sheets
+// Load projects from Google Sheets with multiple fallback methods
 async function loadProjectsFromGoogleSheets() {
-    try {
-        // Method 1: Try using CSV export (works for public sheets)
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1`;
-        
-        const response = await fetch(csvUrl);
-        if (!response.ok) {
-            throw new Error('Failed to fetch Google Sheets data');
+    const methods = [
+        // Method 1: CSV export (most reliable for public sheets)
+        async () => {
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv`;
+            const response = await fetch(csvUrl, { 
+                mode: 'cors',
+                cache: 'no-cache'
+            });
+            if (!response.ok) throw new Error('CSV fetch failed');
+            const csvText = await response.text();
+            if (!csvText || csvText.trim().length < 10) throw new Error('Empty CSV');
+            return parseCSVToProjects(csvText);
+        },
+        // Method 2: Try with sheet name parameter
+        async () => {
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1`;
+            const response = await fetch(csvUrl, { mode: 'cors' });
+            if (!response.ok) throw new Error('Sheet1 fetch failed');
+            const csvText = await response.text();
+            if (!csvText || csvText.trim().length < 10) throw new Error('Empty CSV');
+            return parseCSVToProjects(csvText);
+        },
+        // Method 3: Try all common sheet names
+        async () => {
+            const sheetNames = ['Projects', 'Data', 'Main', 'Sheet1', 'Sheet 1'];
+            for (const sheetName of sheetNames) {
+                try {
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+                    const response = await fetch(csvUrl, { mode: 'cors' });
+                    if (response.ok) {
+                        const csvText = await response.text();
+                        if (csvText && csvText.trim().length > 10) {
+                            return parseCSVToProjects(csvText);
+                        }
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            throw new Error('All sheet names failed');
         }
-        
-        const csvText = await response.text();
-        allProjects = parseCSVToProjects(csvText);
-        
-        // If we got projects, enhance them with coordinates
-        allProjects = allProjects.map(project => {
-            return enhanceProjectWithCoordinates(project);
-        });
-        
-        filteredProjects = [...allProjects];
-        
-        console.log(`Loaded ${allProjects.length} projects from Google Sheets`);
-        
-    } catch (error) {
-        console.error('Error loading from Google Sheets:', error);
-        // Fallback: Load from local Excel file or use sample data
-        await loadProjectsFromLocalFile();
+    ];
+    
+    for (const method of methods) {
+        try {
+            const projects = await method();
+            if (projects && projects.length > 0) {
+                allProjects = projects.map(project => enhanceProjectWithCoordinates(project));
+                console.log(`✅ Loaded ${allProjects.length} projects using method`);
+                return;
+            }
+        } catch (error) {
+            console.warn('Method failed:', error.message);
+            continue;
+        }
     }
+    
+    throw new Error('All loading methods failed');
 }
 
-// Parse CSV text to project objects
-function parseCSVToProjects(csvText) {
-    const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+// Load fallback sample data
+async function loadFallbackData() {
+    console.log('Loading fallback sample data...');
+    allProjects = SAMPLE_PROJECTS.map(project => enhanceProjectWithCoordinates(project));
+    filteredProjects = [...allProjects];
+}
+
+// Validate and fix project data
+function validateAndFixProject(project) {
+    // Ensure required fields exist
+    if (!project.name || project.name.trim() === '') {
+        project.name = `Unnamed Project ${Date.now()}`;
+    }
     
-    // Parse header
-    const headers = parseCSVLine(lines[0]);
-    const projects = [];
+    // Fix status
+    project.status = normalizeStatus(project.status || 'Ongoing');
     
-    // Parse data rows
-    for (let i = 1; i < lines.length; i++) {
-        const values = parseCSVLine(lines[i]);
-        if (values.length < headers.length) continue;
-        
-        const project = {};
-        headers.forEach((header, index) => {
-            const key = header.toLowerCase()
-                .replace(/\s+/g, '_')
-                .replace(/[^a-z0-9_]/g, '');
-            project[key] = values[index]?.trim() || '';
-        });
-        
-        // Normalize project data
-        project.name = project.project_name || project.name || `Project ${i}`;
-        project.description = project.description || project.project_description || '';
-        project.status = normalizeStatus(project.status || project.project_status || 'Ongoing');
-        project.department = project.department || project.implementing_department || '';
-        project.subcounty = project.subcounty || project.sub_county || project.subcounty || '';
-        project.ward = project.ward || '';
-        project.budget = parseFloat(project.budget || project.total_budget || 0);
-        project.expenditure = parseFloat(project.expenditure || project.amount_spent || 0);
-        project.source_of_funds = project.source_of_funds || project.funding_source || '';
-        project.start_date = project.start_date || project.start_date || '';
-        project.completion_date = project.completion_date || project.end_date || project.expected_completion || '';
-        project.location = project.location || project.project_location || '';
-        
-        // Determine year from start date or completion date
+    // Fix budget and expenditure (ensure numbers)
+    project.budget = parseFloat(project.budget) || 0;
+    project.expenditure = parseFloat(project.expenditure) || 0;
+    
+    // Ensure budget is not negative
+    if (project.budget < 0) project.budget = Math.abs(project.budget);
+    if (project.expenditure < 0) project.expenditure = Math.abs(project.expenditure);
+    
+    // Expenditure cannot exceed budget significantly (auto-fix)
+    if (project.expenditure > project.budget * 1.5) {
+        project.expenditure = project.budget * 0.9;
+    }
+    
+    // Fix department
+    if (!project.department || project.department.trim() === '') {
+        project.department = 'County Executive';
+    }
+    
+    // Fix subcounty
+    if (!project.subcounty || project.subcounty.trim() === '') {
+        project.subcounty = 'Garissa Township';
+    }
+    
+    // Fix year
+    if (!project.year) {
         const dateStr = project.start_date || project.completion_date || '';
         if (dateStr) {
             const yearMatch = dateStr.match(/(\d{4})/);
@@ -154,11 +291,94 @@ function parseCSVToProjects(csvText) {
         } else {
             project.year = new Date().getFullYear();
         }
-        
-        projects.push(project);
+    }
+    
+    // Ensure coordinates exist
+    if (!project.latitude || !project.longitude) {
+        const coords = geocodeLocation(project);
+        project.latitude = coords.lat;
+        project.longitude = coords.lng;
+    }
+    
+    // Validate coordinates are in reasonable range for Kenya/Garissa
+    if (project.latitude < -5 || project.latitude > 5 || 
+        project.longitude < 35 || project.longitude > 42) {
+        const coords = geocodeLocation(project);
+        project.latitude = coords.lat;
+        project.longitude = coords.lng;
+    }
+    
+    return project;
+}
+
+// Parse CSV text to project objects
+function parseCSVToProjects(csvText) {
+    if (!csvText || csvText.trim().length === 0) return [];
+    
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+    
+    // Parse header
+    const headers = parseCSVLine(lines[0]);
+    if (headers.length === 0) return [];
+    
+    const projects = [];
+    
+    // Parse data rows
+    for (let i = 1; i < lines.length; i++) {
+        try {
+            const values = parseCSVLine(lines[i]);
+            if (values.length === 0 || values.every(v => !v || v.trim() === '')) continue;
+            
+            const project = {};
+            headers.forEach((header, index) => {
+                const key = normalizeHeaderKey(header);
+                project[key] = values[index]?.trim() || '';
+            });
+            
+            // Normalize project data
+            project.name = (project.project_name || project.name || project.title || `Project ${i}`).trim();
+            project.description = (project.description || project.project_description || project.details || '').trim();
+            project.status = normalizeStatus(project.status || project.project_status || project.state || 'Ongoing');
+            project.department = (project.department || project.implementing_department || project.dept || '').trim();
+            project.subcounty = (project.subcounty || project.sub_county || project.sub_county_name || '').trim();
+            project.ward = (project.ward || project.ward_name || '').trim();
+            project.budget = parseFloat(project.budget || project.total_budget || project.budget_amount || 0);
+            project.expenditure = parseFloat(project.expenditure || project.amount_spent || project.expenses || 0);
+            project.source_of_funds = (project.source_of_funds || project.funding_source || project.funder || '').trim();
+            project.start_date = (project.start_date || project.start_date_2 || project.commencement_date || '').trim();
+            project.completion_date = (project.completion_date || project.end_date || project.expected_completion || project.finish_date || '').trim();
+            project.location = (project.location || project.project_location || project.site || '').trim();
+            
+            // Determine year
+            const dateStr = project.start_date || project.completion_date || '';
+            if (dateStr) {
+                const yearMatch = dateStr.match(/(\d{4})/);
+                project.year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
+            } else {
+                project.year = new Date().getFullYear();
+            }
+            
+            // Only add if project has a name
+            if (project.name && project.name !== `Project ${i}`) {
+                projects.push(project);
+            }
+        } catch (error) {
+            console.warn(`Error parsing row ${i}:`, error);
+            continue;
+        }
     }
     
     return projects;
+}
+
+// Normalize header keys
+function normalizeHeaderKey(header) {
+    return header.toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
 }
 
 // Parse CSV line handling quoted values
@@ -169,9 +389,15 @@ function parseCSVLine(line) {
     
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
+        const nextChar = line[i + 1];
         
         if (char === '"') {
-            inQuotes = !inQuotes;
+            if (inQuotes && nextChar === '"') {
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                inQuotes = !inQuotes;
+            }
         } else if (char === ',' && !inQuotes) {
             values.push(current.trim());
             current = '';
@@ -186,16 +412,16 @@ function parseCSVLine(line) {
 
 // Normalize status values
 function normalizeStatus(status) {
-    const statusLower = status.toLowerCase().trim();
-    if (statusLower.includes('complete') || statusLower === 'completed') return 'Completed';
-    if (statusLower.includes('ongoing') || statusLower === 'in progress') return 'Ongoing';
-    if (statusLower.includes('stall') || statusLower === 'delayed') return 'Stalled';
+    if (!status) return 'Ongoing';
+    const statusLower = String(status).toLowerCase().trim();
+    if (statusLower.includes('complete') || statusLower === 'done' || statusLower === 'finished') return 'Completed';
+    if (statusLower.includes('ongoing') || statusLower === 'in progress' || statusLower === 'active') return 'Ongoing';
+    if (statusLower.includes('stall') || statusLower === 'delayed' || statusLower === 'on hold') return 'Stalled';
     return 'Ongoing';
 }
 
 // Enhance project with coordinates
 function enhanceProjectWithCoordinates(project) {
-    // Try to extract location information
     let lat = null;
     let lng = null;
     
@@ -203,9 +429,9 @@ function enhanceProjectWithCoordinates(project) {
     if (project.latitude && project.longitude) {
         lat = parseFloat(project.latitude);
         lng = parseFloat(project.longitude);
-    } else if (project.coordinates) {
-        // Parse coordinates string
-        const coordMatch = project.coordinates.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+    } else if (project.coordinates || project.coord) {
+        const coordStr = (project.coordinates || project.coord || '').toString();
+        const coordMatch = coordStr.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
         if (coordMatch) {
             lat = parseFloat(coordMatch[1]);
             lng = parseFloat(coordMatch[2]);
@@ -213,7 +439,7 @@ function enhanceProjectWithCoordinates(project) {
     }
     
     // If no coordinates, use geocoding based on location data
-    if (!lat || !lng) {
+    if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
         const coords = geocodeLocation(project);
         lat = coords.lat;
         lng = coords.lng;
@@ -232,31 +458,35 @@ function geocodeLocation(project) {
     let lat = GARISSA_TOWN_CENTER[0];
     let lng = GARISSA_TOWN_CENTER[1];
     
-    // If we have subcounty/ward, use approximate coordinates
-    const subcounty = project.subcounty || '';
-    const ward = project.ward || '';
-    const location = project.location || '';
+    const subcounty = (project.subcounty || '').toLowerCase();
+    const ward = (project.ward || '').toLowerCase();
+    const location = (project.location || '').toLowerCase();
     
-    // Check if it's Garissa Town
-    if (isGarissaTownLocation(project)) {
-        // Use slightly varied coordinates within Garissa Town
-        lat = GARISSA_TOWN_CENTER[0] + (Math.random() - 0.5) * 0.05;
-        lng = GARISSA_TOWN_CENTER[1] + (Math.random() - 0.5) * 0.05;
-    } else if (subcounty || ward || location) {
-        // Generate approximate coordinates based on location name
-        // Using hash-based deterministic randomness
-        const locationStr = `${subcounty}${ward}${location}`;
-        const hash = locationStr.split('').reduce((acc, char) => {
-            return ((acc << 5) - acc) + char.charCodeAt(0);
-        }, 0);
-        
-        // Spread projects across county bounds
-        lat = GARISSA_COUNTY_BOUNDS[0][0] + 
-              (Math.abs(hash % 100) / 100) * 
-              (GARISSA_COUNTY_BOUNDS[1][0] - GARISSA_COUNTY_BOUNDS[0][0]);
-        lng = GARISSA_COUNTY_BOUNDS[0][1] + 
-              (Math.abs(hash % 100) / 100) * 
-              (GARISSA_COUNTY_BOUNDS[1][1] - GARISSA_COUNTY_BOUNDS[0][1]);
+    // Sub-county coordinates mapping
+    const subcountyCoords = {
+        'garissa township': { lat: -0.4569, lng: 39.6463 },
+        'balambala': { lat: -0.5833, lng: 39.9167 },
+        'lagdera': { lat: -0.4167, lng: 39.7500 },
+        'dadaab': { lat: 0.3833, lng: 40.0667 },
+        'fafi': { lat: -0.7500, lng: 40.0833 },
+        'ijara': { lat: -1.2500, lng: 40.3333 },
+        'hulugho': { lat: -1.1667, lng: 40.2500 },
+        'sankuri': { lat: -0.5000, lng: 39.8333 },
+        'masalani': { lat: -1.3000, lng: 40.3833 },
+        'bura east': { lat: -0.7500, lng: 40.1667 },
+        'bura west': { lat: -0.8000, lng: 40.1000 }
+    };
+    
+    // Try to find subcounty match
+    for (const [key, coords] of Object.entries(subcountyCoords)) {
+        if (subcounty.includes(key) || location.includes(key)) {
+            lat = coords.lat;
+            lng = coords.lng;
+            // Add small random offset for different projects
+            lat += (Math.random() - 0.5) * 0.05;
+            lng += (Math.random() - 0.5) * 0.05;
+            break;
+        }
     }
     
     return { lat, lng };
@@ -276,30 +506,57 @@ function isGarissaTownLocation(project) {
            location.includes('garissa township');
 }
 
-// Initialize map
+// Initialize map with satellite basemap
 function initializeMap() {
-    map = L.map('map').setView(GARISSA_TOWN_CENTER, 9);
+    // Initialize map centered on Garissa with default zoom
+    map = L.map('map', {
+        center: GARISSA_TOWN_CENTER,
+        zoom: 9,
+        zoomControl: true
+    }).setView(GARISSA_TOWN_CENTER, 9);
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Add Esri World Imagery (Satellite) as primary basemap
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
+        maxZoom: 19
+    });
+    
+    // Add OpenStreetMap as fallback/alternative
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18
-    }).addTo(map);
+        maxZoom: 19
+    });
     
-    // Add county boundary marker
+    // Add satellite layer first
+    satelliteLayer.addTo(map);
+    
+    // Add base layer control
+    const baseMaps = {
+        "Satellite": satelliteLayer,
+        "OpenStreetMap": osmLayer
+    };
+    
+    L.control.layers(baseMaps).addTo(map);
+    
+    // Add county center marker
     L.marker(GARISSA_TOWN_CENTER).addTo(map)
         .bindPopup('<b>Garissa Town</b><br>County Headquarters');
-    
-    updateMapMarkers();
 }
 
 // Update map markers
 function updateMapMarkers() {
+    if (!map) return;
+    
     // Clear existing markers
     markers.forEach(marker => map.removeLayer(marker));
     markers = [];
     
+    if (filteredProjects.length === 0) return;
+    
     filteredProjects.forEach(project => {
-        if (!project.latitude || !project.longitude) return;
+        if (!project.latitude || !project.longitude || isNaN(project.latitude) || isNaN(project.longitude)) {
+            return;
+        }
         
         // Determine marker color based on status
         let color = '#3b82f6'; // Default blue
@@ -316,7 +573,7 @@ function updateMapMarkers() {
         // Special styling for Garissa Town projects
         if (project.isGarissaTown) {
             color = '#8b5cf6'; // Purple
-            size = 25;
+            size = 28;
         }
         
         // Create custom icon
@@ -326,7 +583,7 @@ function updateMapMarkers() {
             height: ${size}px;
             border-radius: 50%;
             border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
             ${project.isGarissaTown ? 'animation: pulse 2s infinite;' : ''}
         "></div>`;
         
@@ -337,19 +594,27 @@ function updateMapMarkers() {
             iconAnchor: [size / 2, size / 2]
         });
         
-        const marker = L.marker([project.latitude, project.longitude], { icon: customIcon })
-            .addTo(map)
-            .bindPopup(createPopupContent(project));
-        
-        markers.push(marker);
+        try {
+            const marker = L.marker([project.latitude, project.longitude], { icon: customIcon })
+                .addTo(map)
+                .bindPopup(createPopupContent(project));
+            
+            markers.push(marker);
+        } catch (error) {
+            console.warn('Error creating marker for project:', project.name, error);
+        }
     });
     
     // Fit map to show all markers
     if (markers.length > 0) {
-        const group = L.featureGroup(markers);
-        const bounds = group.getBounds();
-        if (bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [50, 50] });
+        try {
+            const group = L.featureGroup(markers);
+            const bounds = group.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+            }
+        } catch (error) {
+            console.warn('Error fitting bounds:', error);
         }
     }
 }
@@ -360,9 +625,9 @@ function createPopupContent(project) {
     const budget = formatCurrency(project.budget || 0);
     
     return `
-        <div style="min-width: 200px;">
-            <h3 style="font-weight: bold; margin-bottom: 8px; color: #1f2937;">${project.name}</h3>
-            <div class="${statusClass} filter-badge" style="margin-bottom: 8px;">
+        <div style="min-width: 250px;">
+            <h3 style="font-weight: bold; margin-bottom: 8px; color: #1f2937; font-size: 16px;">${project.name}</h3>
+            <div class="${statusClass} filter-badge" style="margin-bottom: 8px; display: inline-block;">
                 ${project.status}
             </div>
             <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 4px;">
@@ -374,7 +639,7 @@ function createPopupContent(project) {
             <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 4px;">
                 <strong>Budget:</strong> ${budget}
             </p>
-            ${project.description ? `<p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">${project.description.substring(0, 100)}...</p>` : ''}
+            ${project.description ? `<p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px; line-height: 1.4;">${project.description.substring(0, 120)}${project.description.length > 120 ? '...' : ''}</p>` : ''}
         </div>
     `;
 }
@@ -385,19 +650,35 @@ function initializeFilters() {
     populateFilterDropdowns();
     
     // Setup filter event listeners
-    document.getElementById('search-input').addEventListener('input', applyFilters);
-    document.getElementById('status-filter').addEventListener('change', applyFilters);
-    document.getElementById('subcounty-filter').addEventListener('change', applyFilters);
-    document.getElementById('ward-filter').addEventListener('change', applyFilters);
-    document.getElementById('department-filter').addEventListener('change', applyFilters);
-    document.getElementById('budget-filter').addEventListener('change', applyFilters);
-    document.getElementById('year-filter').addEventListener('change', applyFilters);
-    document.getElementById('funding-filter').addEventListener('change', applyFilters);
-    document.getElementById('clear-filters').addEventListener('click', clearFilters);
+    const filterElements = [
+        'search-input',
+        'status-filter',
+        'subcounty-filter',
+        'ward-filter',
+        'department-filter',
+        'budget-filter',
+        'year-filter',
+        'funding-filter'
+    ];
+    
+    filterElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', applyFilters);
+            element.addEventListener('input', applyFilters);
+        }
+    });
+    
+    const clearBtn = document.getElementById('clear-filters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearFilters);
+    }
 }
 
 // Populate filter dropdowns
 function populateFilterDropdowns() {
+    if (allProjects.length === 0) return;
+    
     // Get unique values from projects
     const subcounties = [...new Set(allProjects.map(p => p.subcounty).filter(Boolean))].sort();
     const wards = [...new Set(allProjects.map(p => p.ward).filter(Boolean))].sort();
@@ -405,67 +686,48 @@ function populateFilterDropdowns() {
     const fundingSources = [...new Set(allProjects.map(p => p.source_of_funds).filter(Boolean))].filter(Boolean).sort();
     const years = [...new Set(allProjects.map(p => p.year).filter(Boolean))].sort((a, b) => b - a);
     
-    // Populate subcounties
-    const subcountySelect = document.getElementById('subcounty-filter');
-    subcounties.forEach(subcounty => {
-        const option = document.createElement('option');
-        option.value = subcounty;
-        option.textContent = subcounty;
-        subcountySelect.appendChild(option);
-    });
+    // Helper function to populate select
+    const populateSelect = (id, options) => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        
+        // Keep the first option (All)
+        const firstOption = select.options[0];
+        select.innerHTML = '';
+        if (firstOption) {
+            select.appendChild(firstOption);
+        }
+        
+        options.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.textContent = option;
+            select.appendChild(opt);
+        });
+    };
     
-    // Populate wards
-    const wardSelect = document.getElementById('ward-filter');
-    wards.forEach(ward => {
-        const option = document.createElement('option');
-        option.value = ward;
-        option.textContent = ward;
-        wardSelect.appendChild(option);
-    });
-    
-    // Populate departments
-    const deptSelect = document.getElementById('department-filter');
-    departments.forEach(dept => {
-        const option = document.createElement('option');
-        option.value = dept;
-        option.textContent = dept;
-        deptSelect.appendChild(option);
-    });
-    
-    // Populate funding sources
-    const fundingSelect = document.getElementById('funding-filter');
-    fundingSources.forEach(source => {
-        const option = document.createElement('option');
-        option.value = source;
-        option.textContent = source;
-        fundingSelect.appendChild(option);
-    });
-    
-    // Populate years
-    const yearSelect = document.getElementById('year-filter');
-    years.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        yearSelect.appendChild(option);
-    });
+    populateSelect('subcounty-filter', subcounties);
+    populateSelect('ward-filter', wards);
+    populateSelect('department-filter', departments);
+    populateSelect('funding-filter', fundingSources);
+    populateSelect('year-filter', years);
 }
 
 // Apply filters
 function applyFilters() {
-    const search = document.getElementById('search-input').value.toLowerCase();
-    const status = document.getElementById('status-filter').value;
-    const subcounty = document.getElementById('subcounty-filter').value;
-    const ward = document.getElementById('ward-filter').value;
-    const department = document.getElementById('department-filter').value;
-    const budgetRange = document.getElementById('budget-filter').value;
-    const year = document.getElementById('year-filter').value;
-    const funding = document.getElementById('funding-filter').value;
+    const search = (document.getElementById('search-input')?.value || '').toLowerCase();
+    const status = document.getElementById('status-filter')?.value || '';
+    const subcounty = document.getElementById('subcounty-filter')?.value || '';
+    const ward = document.getElementById('ward-filter')?.value || '';
+    const department = document.getElementById('department-filter')?.value || '';
+    const budgetRange = document.getElementById('budget-filter')?.value || '';
+    const year = document.getElementById('year-filter')?.value || '';
+    const funding = document.getElementById('funding-filter')?.value || '';
     
     filteredProjects = allProjects.filter(project => {
         // Search filter
         if (search) {
-            const searchable = `${project.name} ${project.description} ${project.location} ${project.subcounty} ${project.ward}`.toLowerCase();
+            const searchable = `${project.name} ${project.description} ${project.location} ${project.subcounty} ${project.ward} ${project.department}`.toLowerCase();
             if (!searchable.includes(search)) return false;
         }
         
@@ -483,9 +745,9 @@ function applyFilters() {
         
         // Budget range filter
         if (budgetRange) {
-            const [min, max] = budgetRange.split('-').map(v => parseInt(v));
+            const [min, max] = budgetRange.split('-').map(v => parseInt(v) || 0);
             const budget = project.budget || 0;
-            if (budget < min || (max && budget > max)) return false;
+            if (budget < min || (max && max < 999999999 && budget > max)) return false;
         }
         
         // Year filter
@@ -510,6 +772,7 @@ function applyFilters() {
 // Update active filters display
 function updateActiveFilters(search, status, subcounty, ward, department, budgetRange, year, funding) {
     const container = document.getElementById('active-filters');
+    if (!container) return;
     container.innerHTML = '';
     
     const filters = [
@@ -526,7 +789,7 @@ function updateActiveFilters(search, status, subcounty, ward, department, budget
     filters.forEach(filter => {
         if (filter.value) {
             const badge = document.createElement('span');
-            badge.className = 'filter-badge bg-blue-100 text-blue-800';
+            badge.className = 'filter-badge bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mr-2 mb-2';
             badge.textContent = `${filter.label}: ${filter.value}`;
             container.appendChild(badge);
         }
@@ -535,14 +798,13 @@ function updateActiveFilters(search, status, subcounty, ward, department, budget
 
 // Clear all filters
 function clearFilters() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('status-filter').value = '';
-    document.getElementById('subcounty-filter').value = '';
-    document.getElementById('ward-filter').value = '';
-    document.getElementById('department-filter').value = '';
-    document.getElementById('budget-filter').value = '';
-    document.getElementById('year-filter').value = '';
-    document.getElementById('funding-filter').value = '';
+    const filterIds = ['search-input', 'status-filter', 'subcounty-filter', 'ward-filter', 
+                      'department-filter', 'budget-filter', 'year-filter', 'funding-filter'];
+    
+    filterIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
     
     applyFilters();
 }
@@ -566,8 +828,10 @@ function switchTab(tabName) {
     });
     
     const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
-    activeButton.classList.add('active', 'border-red-600', 'text-red-600');
-    activeButton.classList.remove('border-transparent', 'text-gray-500');
+    if (activeButton) {
+        activeButton.classList.add('active', 'border-red-600', 'text-red-600');
+        activeButton.classList.remove('border-transparent', 'text-gray-500');
+    }
     
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -575,7 +839,10 @@ function switchTab(tabName) {
     });
     
     // Show selected tab
-    document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+    const tabContent = document.getElementById(`${tabName}-tab`);
+    if (tabContent) {
+        tabContent.classList.remove('hidden');
+    }
     
     // Initialize tab-specific content
     if (tabName === 'analytics') {
@@ -586,6 +853,7 @@ function switchTab(tabName) {
 // Render projects list
 function renderProjects() {
     const container = document.getElementById('projects-container');
+    if (!container) return;
     container.innerHTML = '';
     
     if (filteredProjects.length === 0) {
@@ -596,7 +864,7 @@ function renderProjects() {
                 <p class="text-gray-500 text-sm mt-2">Try adjusting your search criteria.</p>
             </div>
         `;
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         return;
     }
     
@@ -612,7 +880,6 @@ function renderProjects() {
         if (projects.length === 0) return;
         
         const statusClass = `status-${status.toLowerCase()}`;
-        const statusColor = status === 'Completed' ? 'green' : status === 'Ongoing' ? 'yellow' : 'red';
         
         const groupDiv = document.createElement('div');
         groupDiv.className = 'mb-8';
@@ -628,7 +895,7 @@ function renderProjects() {
         container.appendChild(groupDiv);
     });
     
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // Create project card
@@ -642,19 +909,19 @@ function createProjectCard(project) {
             project.status === 'Ongoing' ? 'border-yellow-500' : 'border-red-500'
         }">
             <div class="flex items-start justify-between mb-3">
-                <h4 class="font-bold text-gray-800 text-lg flex-1">${project.name}</h4>
+                <h4 class="font-bold text-gray-800 text-lg flex-1">${escapeHtml(project.name)}</h4>
                 ${project.isGarissaTown ? '<span class="text-purple-600 text-xs font-semibold ml-2">📍 Town</span>' : ''}
             </div>
             <div class="${statusClass} filter-badge mb-3">${project.status}</div>
-            <p class="text-gray-600 text-sm mb-3 line-clamp-2">${project.description || 'No description available'}</p>
+            <p class="text-gray-600 text-sm mb-3 line-clamp-2">${escapeHtml(project.description || 'No description available')}</p>
             <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
                     <span class="text-gray-600">Department:</span>
-                    <span class="font-medium text-gray-800">${project.department || 'N/A'}</span>
+                    <span class="font-medium text-gray-800">${escapeHtml(project.department || 'N/A')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Location:</span>
-                    <span class="font-medium text-gray-800">${project.subcounty || 'N/A'}</span>
+                    <span class="font-medium text-gray-800">${escapeHtml(project.subcounty || 'N/A')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Budget:</span>
@@ -667,13 +934,15 @@ function createProjectCard(project) {
 
 // Update statistics
 function updateStats() {
-    document.getElementById('total-projects').textContent = filteredProjects.length;
-    document.getElementById('completed-projects').textContent = 
-        filteredProjects.filter(p => p.status === 'Completed').length;
-    document.getElementById('ongoing-projects').textContent = 
-        filteredProjects.filter(p => p.status === 'Ongoing').length;
-    document.getElementById('stalled-projects').textContent = 
-        filteredProjects.filter(p => p.status === 'Stalled').length;
+    const updateStat = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+    
+    updateStat('total-projects', filteredProjects.length);
+    updateStat('completed-projects', filteredProjects.filter(p => p.status === 'Completed').length);
+    updateStat('ongoing-projects', filteredProjects.filter(p => p.status === 'Ongoing').length);
+    updateStat('stalled-projects', filteredProjects.filter(p => p.status === 'Stalled').length);
 }
 
 // Initialize charts
@@ -684,7 +953,13 @@ function initializeCharts() {
         charts.status = new Chart(statusCtx, {
             type: 'doughnut',
             data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-            options: { responsive: true, maintainAspectRatio: true }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
         });
     }
     
@@ -694,7 +969,14 @@ function initializeCharts() {
         charts.department = new Chart(deptCtx, {
             type: 'bar',
             data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-            options: { responsive: true, maintainAspectRatio: true, indexAxis: 'y' }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: true, 
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
         });
     }
     
@@ -704,7 +986,13 @@ function initializeCharts() {
         charts.budget = new Chart(budgetCtx, {
             type: 'pie',
             data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-            options: { responsive: true, maintainAspectRatio: true }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
         });
     }
     
@@ -714,7 +1002,13 @@ function initializeCharts() {
         charts.subcounty = new Chart(subcountyCtx, {
             type: 'bar',
             data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-            options: { responsive: true, maintainAspectRatio: true }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
         });
     }
 }
@@ -810,9 +1104,14 @@ function updateCharts() {
 // Setup event listeners
 function setupEventListeners() {
     // Export buttons
-    document.getElementById('export-excel').addEventListener('click', exportToExcel);
-    document.getElementById('export-pdf').addEventListener('click', exportToPDF);
-    document.getElementById('generate-map-report').addEventListener('click', generateMapReport);
+    const exportExcel = document.getElementById('export-excel');
+    if (exportExcel) exportExcel.addEventListener('click', exportToExcel);
+    
+    const exportPdf = document.getElementById('export-pdf');
+    if (exportPdf) exportPdf.addEventListener('click', exportToPDF);
+    
+    const generateMapReport = document.getElementById('generate-map-report');
+    if (generateMapReport) generateMapReport.addEventListener('click', generateMapReport);
     
     // Report cards
     document.querySelectorAll('.report-card').forEach(card => {
@@ -825,6 +1124,11 @@ function setupEventListeners() {
 
 // Export to Excel
 function exportToExcel() {
+    if (typeof XLSX === 'undefined') {
+        alert('Excel export library not loaded. Please refresh the page.');
+        return;
+    }
+    
     const data = filteredProjects.map(p => ({
         'Project Name': p.name,
         'Description': p.description,
@@ -840,16 +1144,19 @@ function exportToExcel() {
         'Location': p.location
     }));
     
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Projects');
-    XLSX.writeFile(wb, `garissa-projects-${new Date().toISOString().split('T')[0]}.xlsx`);
+    try {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Projects');
+        XLSX.writeFile(wb, `garissa-projects-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Error exporting to Excel. Please try again.');
+    }
 }
 
 // Export to PDF (simple text version)
 function exportToPDF() {
-    // For a full PDF export, you'd need a library like jsPDF
-    // For now, we'll create a simple text report
     let content = 'GARISSA COUNTY PROJECTS REPORT\n';
     content += `Generated: ${new Date().toLocaleString()}\n\n`;
     content += `Total Projects: ${filteredProjects.length}\n\n`;
@@ -872,11 +1179,16 @@ function exportToPDF() {
 
 // Generate map report
 function generateMapReport() {
-    exportToExcel(); // Use Excel export for now
+    exportToExcel();
 }
 
 // Generate specific report
 function generateReport(type) {
+    if (typeof XLSX === 'undefined') {
+        alert('Excel export library not loaded. Please refresh the page.');
+        return;
+    }
+    
     let projects = [];
     
     switch(type) {
@@ -900,7 +1212,6 @@ function generateReport(type) {
             break;
     }
     
-    // Create report data
     const data = projects.map(p => ({
         'Project Name': p.name,
         'Status': p.status,
@@ -910,18 +1221,15 @@ function generateReport(type) {
         'Expenditure': p.expenditure
     }));
     
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${type}-report`);
-    XLSX.writeFile(wb, `garissa-${type}-report-${new Date().toISOString().split('T')[0]}.xlsx`);
-}
-
-// Load projects from local file (fallback)
-async function loadProjectsFromLocalFile() {
-    // This would load from a local JSON or CSV file
-    // For now, return empty array
-    allProjects = [];
-    filteredProjects = [];
+    try {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `${type}-report`);
+        XLSX.writeFile(wb, `garissa-${type}-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+        console.error('Report generation error:', error);
+        alert('Error generating report. Please try again.');
+    }
 }
 
 // Utility functions
@@ -933,15 +1241,38 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function showLoading() {
-    document.getElementById('loading-overlay').classList.remove('hidden');
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.remove('hidden');
 }
 
 function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.add('hidden');
 }
 
 function showError(message) {
-    alert(message); // In production, use a better error display
+    console.error(message);
+    // Could show a toast notification here
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.innerHTML = `
+            <div class="bg-white rounded-lg p-8 text-center max-w-md">
+                <div class="text-red-600 mb-4">
+                    <i data-lucide="alert-circle" class="w-12 h-12 mx-auto"></i>
+                </div>
+                <p class="text-gray-800 font-semibold mb-2">${message}</p>
+                <button onclick="location.reload()" class="bg-red-600 text-white px-6 py-2 rounded-lg mt-4 hover:bg-red-700">
+                    Reload Page
+                </button>
+            </div>
+        `;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
 }
-

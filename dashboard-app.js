@@ -144,7 +144,11 @@ async function initializeApp() {
         });
         
         // Validate and fix project data
-        allProjects = allProjects.map(project => validateAndFixProject(project)).filter(p => p !== null);
+        allProjects = allProjects.map((project, index) => {
+            const fixed = validateAndFixProject(project);
+            if (!fixed.id) fixed.id = `project-${index}-${Date.now()}`;
+            return fixed;
+        }).filter(p => p !== null);
         filteredProjects = [...allProjects];
         
         // Initialize UI components
@@ -252,12 +256,21 @@ async function loadProjectsFromGoogleSheets() {
 // Load fallback sample data
 async function loadFallbackData() {
     console.log('Loading fallback sample data...');
-    allProjects = SAMPLE_PROJECTS.map(project => enhanceProjectWithCoordinates(project));
+    allProjects = SAMPLE_PROJECTS.map((project, index) => {
+        const enhanced = enhanceProjectWithCoordinates(project);
+        if (!enhanced.id) enhanced.id = `project-${index}-${Date.now()}`;
+        return enhanced;
+    });
     filteredProjects = [...allProjects];
 }
 
 // Validate and fix project data
 function validateAndFixProject(project) {
+    // Ensure ID exists
+    if (!project.id) {
+        project.id = `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
     // Ensure required fields exist
     if (!project.name || project.name.trim() === '') {
         project.name = `Unnamed Project ${Date.now()}`;

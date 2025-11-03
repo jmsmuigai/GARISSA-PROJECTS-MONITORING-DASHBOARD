@@ -208,10 +208,22 @@ async function initializeApp() {
         const fallbackPromise = loadFallbackData();
         
         try {
-            const projects = await Promise.any(loadPromises);
+            // Use Promise.any if available, otherwise race all promises
+            let projects = null;
+            if (Promise.any) {
+                projects = await Promise.any(loadPromises);
+            } else {
+                // Fallback for browsers without Promise.any
+                const results = await Promise.allSettled(loadPromises);
+                const fulfilled = results.find(r => r.status === 'fulfilled');
+                projects = fulfilled ? fulfilled.value : null;
+            }
+            
             if (projects && projects.length > 0) {
                 console.log(`✅ Loaded ${projects.length} projects from Google Sheets`);
                 allProjects = projects;
+            } else {
+                throw new Error('No projects from Google Sheets');
             }
         } catch (error) {
             console.warn('Google Sheets load failed, using fallback:', error);

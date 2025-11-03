@@ -1253,6 +1253,20 @@ showFeedbackModal = function(projectId) {
 window.showFeedbackModal = showFeedbackModal;
 
 function updateFeedbackCounts() {
+    // Reload feedback data from localStorage
+    try {
+        feedbackData = JSON.parse(localStorage.getItem('garissaFeedback') || '[]');
+    } catch (e) {
+        feedbackData = [];
+    }
+    
+    // Update total feedback count in header
+    const totalCount = feedbackData.length;
+    const totalBadge = document.getElementById('total-feedback-count');
+    if (totalBadge) {
+        totalBadge.textContent = totalCount;
+    }
+    
     // Update feedback count badges on project cards
     filteredProjects.forEach(project => {
         const count = feedbackData.filter(f => f.projectId === project.id).length;

@@ -90,6 +90,11 @@
                         <button class="lang-btn bg-white text-gray-700 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100" data-lang="sw">SW</button>
                         <button class="lang-btn bg-white text-gray-700 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100" data-lang="so">SO</button>
                     </div>
+                    <button onclick="viewAllFeedback()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i>
+                        <span data-translate="viewAllFeedback">View All Feedback</span>
+                        <span id="total-feedback-count" class="bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold ml-2">0</span>
+                    </button>
                     <a href="mailto:feedback@garissa.go.ke?subject=Dashboard%20Feedback" 
                        class="bg-white text-red-800 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center space-x-2">
                         <i data-lucide="mail" class="w-5 h-5"></i>

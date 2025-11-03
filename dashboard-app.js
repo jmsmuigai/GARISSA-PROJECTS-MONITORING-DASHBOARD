@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 
+// Declare functions for global access (will be defined later)
+let showFeedbackModal, viewAllFeedback;
+
 async function initializeApp() {
     // Show loading overlay
     showLoading();
@@ -154,9 +157,13 @@ async function initializeApp() {
         updateStats();
         updateMapMarkers();
         updateCharts();
+        updateFeedbackCounts();
         
         // Setup event listeners
         setupEventListeners();
+        
+        // Update feedback counts
+        updateFeedbackCounts();
         
         console.log(`✅ Successfully loaded ${allProjects.length} projects`);
         
@@ -898,23 +905,33 @@ function renderProjects() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-// Create project card
+// Create project card with feedback button
 function createProjectCard(project) {
     const statusClass = `status-${project.status.toLowerCase()}`;
     const budget = formatCurrency(project.budget || 0);
+    const feedbackCount = feedbackData.filter(f => f.projectId === project.id).length;
+    
+    if (!project.id) project.id = `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     return `
         <div class="project-card bg-white rounded-lg shadow-md p-6 border-l-4 ${
             project.status === 'Completed' ? 'border-green-500' :
             project.status === 'Ongoing' ? 'border-yellow-500' : 'border-red-500'
-        }">
+        }" data-project-id="${project.id}">
             <div class="flex items-start justify-between mb-3">
                 <h4 class="font-bold text-gray-800 text-lg flex-1">${escapeHtml(project.name)}</h4>
                 ${project.isGarissaTown ? '<span class="text-purple-600 text-xs font-semibold ml-2">📍 Town</span>' : ''}
             </div>
-            <div class="${statusClass} filter-badge mb-3">${project.status}</div>
+            <div class="flex items-center justify-between mb-3">
+                <div class="${statusClass} filter-badge">${project.status}</div>
+                <button onclick="showFeedbackModal('${project.id}')" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    <span data-translate="sendProjectFeedback">Send Feedback</span>
+                    ${feedbackCount > 0 ? `<span class="feedback-count bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs ml-1">${feedbackCount}</span>` : ''}
+                </button>
+            </div>
             <p class="text-gray-600 text-sm mb-3 line-clamp-2">${escapeHtml(project.description || 'No description available')}</p>
-            <div class="space-y-2 text-sm">
+            <div class="space-y-2 text-sm mb-3">
                 <div class="flex justify-between">
                     <span class="text-gray-600">Department:</span>
                     <span class="font-medium text-gray-800">${escapeHtml(project.department || 'N/A')}</span>
@@ -1101,8 +1118,321 @@ function updateCharts() {
     }
 }
 
+// Language switching
+let currentLang = localStorage.getItem('garissaLang') || 'en';
+let t = typeof translations !== 'undefined' ? translations[currentLang] : {};
+
+function initializeLanguageSwitcher() {
+    const langButtons = document.querySelectorAll('.lang-btn');
+    langButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.dataset.lang;
+            switchLanguage(lang);
+        });
+    });
+    updateTranslations();
+}
+
+function switchLanguage(lang) {
+    if (typeof translations === 'undefined') return;
+    
+    currentLang = lang;
+    t = translations[lang];
+    localStorage.setItem('garissaLang', lang);
+    
+    // Update button states
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('bg-red-600', 'text-white');
+        btn.classList.add('bg-white', 'text-gray-700');
+        if (btn.dataset.lang === lang) {
+            btn.classList.add('bg-red-600', 'text-white');
+            btn.classList.remove('bg-white', 'text-gray-700');
+        }
+    });
+    
+    updateTranslations();
+}
+
+function updateTranslations() {
+    if (typeof translations === 'undefined') return;
+    
+    const elements = document.querySelectorAll('[data-translate]');
+    elements.forEach(el => {
+        const key = el.dataset.translate;
+        if (t && t[key]) {
+            if (el.tagName === 'INPUT' && el.type === 'text') {
+                el.placeholder = t[key];
+            } else if (el.tagName === 'INPUT' && el.type === 'email') {
+                // Keep placeholder
+            } else {
+                el.textContent = t[key];
+            }
+        }
+    });
+    
+    // Re-initialize icons
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Feedback system
+let feedbackData = [];
+try {
+    feedbackData = JSON.parse(localStorage.getItem('garissaFeedback') || '[]');
+} catch (e) {
+    feedbackData = [];
+}
+
+function initializeFeedbackSystem() {
+    // Feedback form submission
+    const feedbackForm = document.getElementById('feedback-form');
+    if (feedbackForm) {
+        feedbackForm.addEventListener('submit', handleFeedbackSubmit);
+    }
+    
+    // Modal close buttons
+    const closeFeedback = document.getElementById('close-feedback');
+    if (closeFeedback) closeFeedback.addEventListener('click', () => {
+        document.getElementById('feedback-modal').classList.add('hidden');
+    });
+    
+    const cancelFeedback = document.getElementById('cancel-feedback');
+    if (cancelFeedback) cancelFeedback.addEventListener('click', () => {
+        document.getElementById('feedback-modal').classList.add('hidden');
+    });
+    
+    const closeAllFeedback = document.getElementById('close-all-feedback');
+    if (closeAllFeedback) closeAllFeedback.addEventListener('click', () => {
+        document.getElementById('all-feedback-modal').classList.add('hidden');
+    });
+}
+
+function handleFeedbackSubmit(e) {
+    e.preventDefault();
+    const projectId = document.getElementById('feedback-project-id').value;
+    const name = document.getElementById('feedback-name').value;
+    const email = document.getElementById('feedback-email').value;
+    const message = document.getElementById('feedback-message').value;
+    
+    const feedback = {
+        id: Date.now(),
+        projectId: projectId,
+        projectName: allProjects.find(p => p.id === projectId)?.name || 'Unknown',
+        name: name,
+        email: email,
+        message: message,
+        date: new Date().toISOString(),
+        sent: false
+    };
+    
+    // Save to localStorage
+    feedbackData.push(feedback);
+    localStorage.setItem('garissaFeedback', JSON.stringify(feedbackData));
+    
+    // Send to email (simulate)
+    const mailtoLink = `mailto:feedback@garissa.go.ke?subject=Project Feedback: ${encodeURIComponent(feedback.projectName)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\nProject: ${feedback.projectName}\n\nMessage:\n${message}`)}`;
+    window.location.href = mailtoLink;
+    
+    // Close modal
+    document.getElementById('feedback-modal').classList.add('hidden');
+    
+    // Show success message
+    alert(t?.feedbackSent || 'Thank you! Your feedback has been sent.');
+    
+    // Update feedback counts
+    updateFeedbackCounts();
+}
+
+showFeedbackModal = function(projectId) {
+    document.getElementById('feedback-project-id').value = projectId;
+    document.getElementById('feedback-form').reset();
+    document.getElementById('feedback-modal').classList.remove('hidden');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+// Make globally available
+window.showFeedbackModal = showFeedbackModal;
+
+function updateFeedbackCounts() {
+    // Update feedback count badges on project cards
+    filteredProjects.forEach(project => {
+        const count = feedbackData.filter(f => f.projectId === project.id).length;
+        const badge = document.querySelector(`[data-project-id="${project.id}"] .feedback-count`);
+        if (badge) {
+            badge.textContent = count;
+            badge.classList.toggle('hidden', count === 0);
+        }
+    });
+}
+
+viewAllFeedback = function() {
+    const list = document.getElementById('feedback-list');
+    if (!list) return;
+    
+    if (feedbackData.length === 0) {
+        list.innerHTML = `<p class="text-gray-600 text-center py-8" data-translate="noFeedbackYet">No feedback yet. Be the first to share your thoughts!</p>`;
+        updateTranslations();
+        return;
+    }
+    
+    list.innerHTML = feedbackData.map(fb => `
+        <div class="border-b border-gray-200 py-4">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="font-bold text-gray-800">${escapeHtml(fb.projectName)}</h4>
+                    <p class="text-sm text-gray-600">${escapeHtml(fb.name)} (${escapeHtml(fb.email)})</p>
+                </div>
+                <span class="text-xs text-gray-500">${new Date(fb.date).toLocaleDateString()}</span>
+            </div>
+            <p class="text-gray-700">${escapeHtml(fb.message)}</p>
+        </div>
+    `).join('');
+    
+    document.getElementById('all-feedback-modal').classList.remove('hidden');
+};
+
+// Make globally available
+window.viewAllFeedback = viewAllFeedback;
+
+// Report viewing panel (instead of download)
+function initializeReportViewing() {
+    // Report cards - show in panel instead of downloading
+    document.querySelectorAll('.report-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const reportType = card.dataset.report;
+            showReportInPanel(reportType);
+        });
+    });
+    
+    // Close report modal
+    const closeReport = document.getElementById('close-report');
+    if (closeReport) closeReport.addEventListener('click', () => {
+        document.getElementById('report-modal').classList.add('hidden');
+    });
+}
+
+function showReportInPanel(reportType) {
+    let projects = [];
+    
+    switch(reportType) {
+        case 'summary':
+            projects = filteredProjects;
+            break;
+        case 'completed':
+            projects = filteredProjects.filter(p => p.status === 'Completed');
+            break;
+        case 'ongoing':
+            projects = filteredProjects.filter(p => p.status === 'Ongoing');
+            break;
+        case 'stalled':
+            projects = filteredProjects.filter(p => p.status === 'Stalled');
+            break;
+        case 'budget':
+            projects = filteredProjects;
+            break;
+        case 'location':
+            projects = filteredProjects;
+            break;
+    }
+    
+    // Update report count
+    document.getElementById('report-count').textContent = projects.length;
+    
+    // Generate report table
+    const reportContent = document.getElementById('report-content');
+    reportContent.innerHTML = `
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expenditure</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                ${projects.map(p => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(p.name)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="filter-badge status-${p.status.toLowerCase()}">${p.status}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(p.department || 'N/A')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(p.subcounty || 'N/A')}${p.ward ? ` - ${escapeHtml(p.ward)}` : ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(p.budget || 0)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(p.expenditure || 0)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    // Show modal
+    document.getElementById('report-modal').classList.remove('hidden');
+}
+
+// Search button and filtered view
+function initializeSearchButton() {
+    const searchButton = document.getElementById('search-button');
+    if (searchButton) {
+        searchButton.addEventListener('click', () => {
+            applyFilters();
+            switchTab('list');
+            const viewFilteredBtn = document.getElementById('view-filtered-btn');
+            if (viewFilteredBtn) {
+                viewFilteredBtn.classList.remove('hidden');
+            }
+        });
+    }
+    
+    const viewFilteredBtn = document.getElementById('view-filtered-btn');
+    if (viewFilteredBtn) {
+        viewFilteredBtn.addEventListener('click', () => {
+            switchTab('list');
+            applyFilters();
+        });
+    }
+    
+    // Auto-show filtered button when filters change
+    const filterInputs = document.querySelectorAll('#search-input, #status-filter, #subcounty-filter, #ward-filter, #department-filter, #budget-filter, #year-filter, #funding-filter');
+    filterInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            const viewFilteredBtn = document.getElementById('view-filtered-btn');
+            if (viewFilteredBtn && hasActiveFilters()) {
+                viewFilteredBtn.classList.remove('hidden');
+            }
+        });
+    });
+}
+
+function hasActiveFilters() {
+    const search = document.getElementById('search-input')?.value;
+    const status = document.getElementById('status-filter')?.value;
+    const subcounty = document.getElementById('subcounty-filter')?.value;
+    const ward = document.getElementById('ward-filter')?.value;
+    const department = document.getElementById('department-filter')?.value;
+    const budget = document.getElementById('budget-filter')?.value;
+    const year = document.getElementById('year-filter')?.value;
+    const funding = document.getElementById('funding-filter')?.value;
+    
+    return !!(search || status || subcounty || ward || department || budget || year || funding);
+}
+
 // Setup event listeners
 function setupEventListeners() {
+    // Language switcher
+    initializeLanguageSwitcher();
+    
+    // Feedback system
+    initializeFeedbackSystem();
+    
+    // Report viewing
+    initializeReportViewing();
+    
+    // Search button
+    initializeSearchButton();
+    
     // Export buttons
     const exportExcel = document.getElementById('export-excel');
     if (exportExcel) exportExcel.addEventListener('click', exportToExcel);
@@ -1113,13 +1443,11 @@ function setupEventListeners() {
     const generateMapReport = document.getElementById('generate-map-report');
     if (generateMapReport) generateMapReport.addEventListener('click', generateMapReport);
     
-    // Report cards
-    document.querySelectorAll('.report-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const reportType = card.dataset.report;
-            generateReport(reportType);
-        });
-    });
+    // View all feedback button (if exists)
+    const viewAllFeedbackBtn = document.getElementById('view-all-feedback-btn');
+    if (viewAllFeedbackBtn) {
+        viewAllFeedbackBtn.addEventListener('click', viewAllFeedback);
+    }
 }
 
 // Export to Excel

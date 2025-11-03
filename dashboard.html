@@ -72,17 +72,28 @@
         <div class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    <img src="Garissa_logo.png" alt="Garissa County Logo" class="w-16 h-16 rounded-full border-4 border-white shadow-lg">
+                    <img src="Garissa_logo.png" alt="Garissa County Logo" class="logo-3d w-16 h-16 rounded-full border-4 border-white shadow-lg">
                     <div>
-                        <h1 class="text-3xl font-bold">Garissa County Projects Dashboard</h1>
-                        <p class="text-green-100 text-sm mt-1">Real-time monitoring of county development projects</p>
+                        <h1 class="text-3xl font-bold" data-translate="title">Garissa County Projects Dashboard</h1>
+                        <p class="text-green-100 text-sm mt-1" data-translate="subtitle">Real-time monitoring of county development projects</p>
+                        <!-- Citizen Narration -->
+                        <div class="mt-2 bg-white bg-opacity-20 rounded-lg p-2 text-xs">
+                            <p data-translate="welcomeMessage">Karibu! Welcome to Garissa County Projects Dashboard</p>
+                            <p class="mt-1 text-green-50" data-translate="description">This dashboard shows all development projects in Garissa County. You can filter, search, and view projects by location, status, department, and more. Share your feedback on any project!</p>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- Language Switcher -->
+                    <div class="flex items-center space-x-2 bg-white rounded-lg p-1">
+                        <button class="lang-btn bg-red-600 text-white px-3 py-1 rounded text-sm font-medium" data-lang="en">EN</button>
+                        <button class="lang-btn bg-white text-gray-700 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100" data-lang="sw">SW</button>
+                        <button class="lang-btn bg-white text-gray-700 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100" data-lang="so">SO</button>
+                    </div>
                     <a href="mailto:feedback@garissa.go.ke?subject=Dashboard%20Feedback" 
                        class="bg-white text-red-800 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center space-x-2">
                         <i data-lucide="mail" class="w-5 h-5"></i>
-                        <span>Send Feedback</span>
+                        <span data-translate="sendFeedback">Send Feedback</span>
                     </a>
                 </div>
             </div>
@@ -152,9 +163,19 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Projects</label>
-                    <input type="text" id="search-input" placeholder="Project name, location..." 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="searchProjects">Search Projects</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="search-input" data-translate="searchPlaceholder" placeholder="Project name, location..." 
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent">
+                        <button id="search-button" class="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center space-x-2">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                            <span data-translate="searchButton">Search</span>
+                        </button>
+                    </div>
+                    <button id="view-filtered-btn" class="mt-2 w-full bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors hidden">
+                        <i data-lucide="eye" class="w-4 h-4 inline mr-2"></i>
+                        <span data-translate="viewFiltered">View Filtered Projects</span>
+                    </button>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -382,10 +403,98 @@
     <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-8 text-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p class="text-gray-800 font-semibold">Loading projects data...</p>
-            <p class="text-gray-600 text-sm mt-2">Please wait while we fetch all project information</p>
+            <p class="text-gray-800 font-semibold" data-translate="loadingProjects">Loading projects data...</p>
+            <p class="text-gray-600 text-sm mt-2" data-translate="pleaseWait">Please wait while we fetch all project information</p>
         </div>
     </div>
+
+    <!-- Report Viewing Modal -->
+    <div id="report-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-red-600 to-green-600 text-white p-6 flex justify-between items-center">
+                <h3 class="text-2xl font-bold" data-translate="reportTitle">Project Report</h3>
+                <button id="close-report" class="text-white hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="mb-4 flex justify-between items-center">
+                    <p class="text-gray-600" data-translate="totalProjectsInReport">Total Projects in Report: <span id="report-count" class="font-bold text-gray-800">0</span></p>
+                    <button id="filter-report-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" data-translate="filterReport">Filter Report</button>
+                </div>
+                <div id="report-content" class="overflow-x-auto">
+                    <!-- Report content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800" data-translate="feedbackTitle">Send Feedback</h3>
+                <button id="close-feedback" class="text-gray-600 hover:text-gray-800">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <p class="text-gray-600 mb-4" data-translate="feedbackSubtitle">Share your thoughts about this project</p>
+            <form id="feedback-form">
+                <input type="hidden" id="feedback-project-id">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="yourName">Your Name</label>
+                    <input type="text" id="feedback-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="yourEmail">Your Email</label>
+                    <input type="email" id="feedback-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-translate="yourMessage">Your Message</label>
+                    <textarea id="feedback-message" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancel-feedback" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50" data-translate="cancel">Cancel</button>
+                    <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" data-translate="send">Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View All Feedback Modal -->
+    <div id="all-feedback-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-red-600 to-green-600 text-white p-6 flex justify-between items-center">
+                <h3 class="text-2xl font-bold" data-translate="viewAllFeedback">View All Feedback</h3>
+                <button id="close-all-feedback" class="text-white hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div id="feedback-list">
+                    <!-- Feedback items will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Logo Animation Styles -->
+    <style>
+        .logo-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease;
+        }
+        .logo-3d:hover {
+            transform: rotateY(15deg) rotateX(5deg) scale(1.05);
+        }
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px) rotateY(0deg); }
+            50% { transform: translateY(-10px) rotateY(5deg); }
+        }
+        .logo-3d {
+            animation: logoFloat 6s ease-in-out infinite;
+        }
+    </style>
 
     <!-- Scripts -->
     <script src="languages.js"></script>

@@ -1276,17 +1276,28 @@ function createProjectCard(project) {
     `;
 }
 
-// Update statistics
+// Update statistics - show totals from allProjects
 function updateStats() {
     const updateStat = (id, value) => {
         const element = document.getElementById(id);
         if (element) element.textContent = value;
     };
     
-    updateStat('total-projects', filteredProjects.length);
-    updateStat('completed-projects', filteredProjects.filter(p => p.status === 'Completed').length);
-    updateStat('ongoing-projects', filteredProjects.filter(p => p.status === 'Ongoing').length);
-    updateStat('stalled-projects', filteredProjects.filter(p => p.status === 'Stalled').length);
+    // Show total counts from allProjects (not filtered)
+    updateStat('total-projects', allProjects.length);
+    updateStat('completed-projects', allProjects.filter(p => p.status === 'Completed').length);
+    updateStat('ongoing-projects', allProjects.filter(p => p.status === 'Ongoing').length);
+    updateStat('stalled-projects', allProjects.filter(p => p.status === 'Stalled').length);
+    
+    // Also update stats elements that might have different IDs
+    const updateStatById = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    updateStatById('total-projects-stat', allProjects.length);
+    updateStatById('completed-projects-stat', allProjects.filter(p => p.status === 'Completed').length);
+    updateStatById('ongoing-projects-stat', allProjects.filter(p => p.status === 'Ongoing').length);
+    updateStatById('stalled-projects-stat', allProjects.filter(p => p.status === 'Stalled').length);
 }
 
 // Initialize charts

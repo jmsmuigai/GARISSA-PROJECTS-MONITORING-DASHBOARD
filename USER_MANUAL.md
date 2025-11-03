@@ -2,14 +2,15 @@
 
 ## 📋 Table of Contents
 1. [Getting Started](#getting-started)
-2. [Dashboard Overview](#dashboard-overview)
-3. [Viewing Projects](#viewing-projects)
-4. [Filtering Projects](#filtering-projects)
-5. [Map View](#map-view)
-6. [Analytics](#analytics)
-7. [Reports](#reports)
-8. [Feedback](#feedback)
-9. [Troubleshooting](#troubleshooting)
+2. [Language Selection](#language-selection)
+3. [Dashboard Overview](#dashboard-overview)
+4. [Viewing Projects](#viewing-projects)
+5. [Filtering Projects](#filtering-projects)
+6. [Map View](#map-view)
+7. [Analytics](#analytics)
+8. [Reports](#reports)
+9. [Feedback System](#feedback-system)
+10. [Troubleshooting](#troubleshooting)
 
 ## 🚀 Getting Started
 
@@ -20,8 +21,35 @@
 
 ### Accessing the Dashboard
 1. **Open the Dashboard**: Simply click on the dashboard link shared with you
+   - Live URL: https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html
 2. **No Login Required**: The dashboard is publicly accessible
 3. **Automatic Loading**: Projects data loads automatically from Google Sheets
+4. **Instant Access**: Map loads immediately, data follows shortly
+
+## 🌍 Language Selection
+
+The dashboard supports three languages for all citizens:
+
+### Available Languages
+- **English (EN)**: Default language
+- **Swahili (SW)**: Kiswahili - For Swahili-speaking citizens
+- **Somali (SO)**: Soomaali - For Somali-speaking citizens
+
+### How to Switch Languages
+1. **Find Language Buttons**: Located in the top-right header
+2. **Click Your Language**: Click EN, SW, or SO button
+3. **Instant Translation**: Entire dashboard translates immediately
+4. **Saved Preference**: Your choice is saved for future visits
+
+### What Gets Translated
+- All dashboard text
+- Button labels
+- Filter options
+- Messages and instructions
+- Citizen narrations
+- Help text
+
+## 📊 Dashboard Overview
 
 ## 📊 Dashboard Overview
 
@@ -72,7 +100,9 @@ The dashboard includes comprehensive filtering options to help you find specific
 
 1. **Search Projects**
    - Type keywords to search project names, descriptions, or locations
+   - **Search Button**: Click the red "Search" button to apply search
    - Real-time search as you type
+   - **View Filtered Button**: Appears automatically when filters are active
 
 2. **Status Filter**
    - Filter by: All Status, Completed, Ongoing, or Stalled
@@ -145,34 +175,51 @@ Projects located in Garissa Town are displayed with special purple pulsing marke
 
 ## 📈 Analytics
 
-The Analytics view provides visual insights into project data through interactive charts:
+The Analytics view provides comprehensive visual insights into project data through interactive charts:
 
 ### Available Charts
 
 1. **Projects by Status**
    - Doughnut chart showing distribution of Completed, Ongoing, and Stalled projects
    - Color-coded for easy understanding
+   - Shows exact counts and percentages
 
 2. **Projects by Department**
    - Horizontal bar chart showing number of projects per department
    - Helps identify which departments have the most active projects
+   - Easy comparison across departments
 
 3. **Budget Distribution**
-   - Pie chart showing projects grouped by budget ranges
+   - Pie chart showing projects grouped by budget ranges:
+     - Under 1M KSh
+     - 1M - 5M KSh
+     - 5M - 10M KSh
+     - 10M - 50M KSh
+     - Above 50M KSh
    - Helps understand budget allocation patterns
 
 4. **Projects by Sub-County**
    - Bar chart showing project distribution across sub-counties
    - Identifies which areas have the most development activity
+   - Geographic insight into project spread
 
-### Using Analytics
-- Charts automatically update based on your active filters
-- Hover over chart elements for detailed information
-- Charts are responsive and adjust to screen size
+### Analytics Features
+- **Real-Time Updates**: Charts update automatically based on your active filters
+- **Interactive**: Hover over chart elements for detailed information
+- **Responsive**: Charts adjust to screen size automatically
+- **Color-Coded**: Easy visual identification
+- **Multiple Views**: See data from different perspectives
+
+### Distribution Analysis
+The analytics help you understand:
+- **Status Distribution**: How many projects are completed vs ongoing vs stalled
+- **Department Focus**: Which departments handle most projects
+- **Budget Patterns**: Where money is being allocated
+- **Geographic Spread**: Which areas receive most development
 
 ## 📄 Reports
 
-The Reports section allows you to generate and download various project reports.
+The Reports section allows you to **view** various project reports directly in the dashboard (no download required).
 
 ### Available Reports
 
@@ -200,11 +247,28 @@ The Reports section allows you to generate and download various project reports.
    - Geographic distribution analysis
    - Project locations by sub-county and ward
 
-### Generating Reports
+### Viewing Reports (No Download Required)
 1. Navigate to the **Reports** tab
-2. Click on the report card you want to generate
-3. The report will be downloaded as an Excel file (.xlsx)
-4. Reports are filtered based on your current filter settings
+2. Click on the report card you want to view (e.g., "Summary Report")
+3. **Report Opens in Panel**: Report displays in a beautiful modal panel
+4. **View All Projects**: See all projects in a scrollable table
+5. **Report Count**: See total number of projects in the report
+6. **Filter Report**: Click "Filter Report" button to refine within the report
+7. **Close Report**: Click X button or outside the panel to close
+
+### Report Types Available
+- **Summary Report**: Complete overview of all filtered projects
+- **Completed Projects**: Only finished projects
+- **Ongoing Projects**: Only active projects
+- **Stalled Projects**: Only projects requiring attention
+- **Budget Analysis**: Financial overview
+- **Location Report**: Geographic distribution
+
+### Report Features
+- **Interactive Table**: Scroll through all projects
+- **Project Details**: Name, status, department, location, budget, expenditure
+- **Filtered Results**: Respects your current dashboard filters
+- **Export Option**: Still available if needed (Excel/PDF buttons in List View)
 
 ### Export Options
 
@@ -224,22 +288,46 @@ All reports include:
 - Budget information
 - Additional project details
 
-## 💬 Feedback
+## 💬 Feedback System
 
-### Sending Feedback
-The dashboard includes a prominent **"Send Feedback"** button in the header that allows you to send feedback directly to the county.
+### Per-Project Feedback
+You can send feedback about **any specific project**:
 
-1. Click the **"Send Feedback"** button
-2. Your default email client will open with a pre-addressed email to **feedback@garissa.go.ke**
-3. Compose your message about:
-   - Dashboard usability
-   - Suggestions for improvement
-   - Reporting issues
-   - General comments about projects
-4. Send your email
+1. **Find a Project**: Browse projects in List View or Map View
+2. **Click "Send Feedback"**: Button on each project card
+3. **Fill Feedback Form**:
+   - Your Name
+   - Your Email
+   - Your Message
+4. **Submit**: Opens email client to send to feedback@garissa.go.ke
+5. **Feedback Saved**: Your feedback is saved and counted
 
-### Feedback Email
-All feedback is sent to: **feedback@garissa.go.ke**
+### View All Feedback
+1. **Click "View All Feedback"** button in header (blue button)
+2. **See Feedback Count**: Number badge shows total feedbacks
+3. **View All Feedbacks**: See all submitted feedbacks with:
+   - Project name
+   - Feedback author name and email
+   - Feedback message
+   - Date submitted
+
+### Feedback Features
+- **Feedback Count Badges**: See number of feedbacks on each project card
+- **Per-Project Tracking**: Each project tracks its own feedback
+- **Email Integration**: Automatically opens email client
+- **Feedback Storage**: Saved in browser (localStorage)
+- **Feedback Display**: View all feedbacks in organized list
+
+### General Dashboard Feedback
+- **Header Button**: "Send Feedback" button sends general dashboard feedback
+- **Email**: feedback@garissa.go.ke
+- **Subject**: Pre-filled with "Dashboard Feedback"
+
+### Feedback Best Practices
+- Be specific about which project you're commenting on
+- Include helpful suggestions
+- Provide contact information for follow-up
+- Be respectful and constructive
 
 ## 🗺️ Garissa County Geography
 

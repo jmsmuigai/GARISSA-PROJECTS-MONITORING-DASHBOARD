@@ -1,268 +1,288 @@
-# Garissa County Project Monitoring Dashboard
+# Garissa County Projects Dashboard 🌍
 
-A comprehensive, GIS-enabled web application for tracking, managing, and analyzing development projects across Garissa County, Kenya.
+A comprehensive, public-facing, multilingual web dashboard for tracking, viewing, and providing feedback on development projects across Garissa County, Kenya.
 
-## 🌟 Features
+## 🎉 Live Dashboard
 
-### Core Functionality
-- **Real-time Dashboard**: Live statistics and project overview
-- **Interactive GIS Mapping**: Visual project locations with Leaflet.js
-- **Project Management**: Add, edit, delete, and track projects
-- **Bulk Data Upload**: CSV import for multiple projects
-- **User Management**: Role-based access control
-- **AI-Powered Reports**: Intelligent insights using Google Gemini Pro
-- **Advanced Analytics**: Budget analysis and timeline tracking
+**🌐 Access the Dashboard**: https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html
 
-### Authentication Options
-- **Gmail OAuth**: Sign in with Google accounts
-- **UPN Login**: Unique Personal Number authentication
-- **Default Admin**: UPN: 123456789, Password: Admin.123!
+## ✨ Key Features
 
-### Garissa County Integration
-- **Complete Sub-county Data**: All 11 sub-counties with wards
-- **Geographical Coordinates**: Accurate location data
-- **County Branding**: Garissa County logo integration
-- **Department Structure**: 10 official county departments
+### 🌍 Multi-Language Support
+- **English** (EN) - Default
+- **Swahili** (SW) - Kiswahili
+- **Somali** (SO) - Soomaali
+- Seamless language switching with persistent preferences
+- Full translations for all UI elements
+
+### 🗺️ Interactive Geographic Visualization
+- **Satellite Basemap** (Esri World Imagery) - Loads instantly
+- **Street Map** option available
+- Color-coded project markers:
+  - 🟢 Green: Completed projects
+  - 🟡 Yellow: Ongoing projects
+  - 🔴 Red: Stalled projects
+  - 🟣 Purple (Pulsing): Garissa Town projects
+- Automatic geocoding from location data
+- UTM coordinate support
+- Click markers for project details
+
+### 🔍 Advanced Filtering & Search
+- **Text Search**: Search by project name, description, or location
+- **Status Filter**: Completed, Ongoing, Stalled
+- **Sub-County Filter**: All 11 sub-counties
+- **Ward Filter**: Filter by specific ward
+- **Department Filter**: Filter by implementing department
+- **Budget Range Filter**: Under 1M, 1M-5M, 5M-10M, 10M-50M, Above 50M
+- **Year Filter**: Filter by project year
+- **Source of Funds Filter**: Filter by funding organization
+- **Search Button**: Prominent search button for easy filtering
+- **View Filtered Projects**: Auto-enable button when filters are active
+- **Active Filter Badges**: Visual display of applied filters
+
+### 📊 Comprehensive Analytics
+- **Projects by Status**: Doughnut chart showing distribution
+- **Projects by Department**: Horizontal bar chart
+- **Budget Distribution**: Pie chart by budget ranges
+- **Projects by Sub-County**: Bar chart showing geographic distribution
+- Interactive charts with hover details
+- Real-time updates based on filters
+
+### 📄 Interactive Report Viewing
+- **No Downloads Required**: View reports directly in panel
+- **Summary Report**: Complete project overview
+- **Completed Projects Report**: All finished projects
+- **Ongoing Projects Report**: Active projects status
+- **Stalled Projects Report**: Projects requiring attention
+- **Budget Analysis Report**: Financial overview
+- **Location Report**: Geographic distribution analysis
+- Reports show in beautiful modal panels
+- Filter reports within the viewing panel
+
+### 💬 Per-Project Feedback System
+- **Send Feedback**: Button on every project card
+- **Feedback Count**: Shows number of feedbacks per project
+- **View All Feedback**: See all submitted feedbacks
+- **Feedback Storage**: Saved in browser localStorage
+- **Email Integration**: Opens email client to send to feedback@garissa.go.ke
+- **Feedback Display**: View all feedbacks with project names, dates, and messages
+
+### 🎨 Modern Design & User Experience
+- **3D Logo Animation**: Floating and rotating Garissa County logo
+- **Gradient Headers**: Beautiful red-to-green gradients
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Smooth Transitions**: Professional animations throughout
+- **Color-Coded Status**: Easy visual identification
+- **Citizen Narrations**: Helpful instructions and welcome messages
+- **Clean UI**: Modern, professional appearance
+
+### 📈 Project Management
+- **Project Grouping**: Automatically grouped by status
+- **List View**: All projects displayed in organized cards
+- **Map View**: Geographic visualization
+- **Project Details**: Full information on each project
+- **Export Options**: Excel and PDF export (still available)
+
+### ⚡ Performance & Reliability
+- **Fast Loading**: Map loads instantly, data loads with timeout
+- **Fallback Data**: Sample projects if Google Sheets unavailable
+- **Auto-Fix Data**: Automatic correction of data issues
+- **Error Handling**: Graceful error handling throughout
+- **Optimized**: Lightweight and fast performance
 
 ## 🚀 Quick Start
 
-### 1. Firebase Setup
-1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com)
-2. Enable Authentication (Email/Password and Google)
-3. Create Firestore database
-4. Update `firebase-config.js` with your project credentials
+### Access the Dashboard
+Simply visit: https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html
 
-### 2. Gemini AI Setup
-1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Update `firebase-config.js` with your Gemini API key
+### No Setup Required!
+- **Public Access**: No login required
+- **Automatic Data Loading**: Loads from Google Sheets automatically
+- **Instant Map**: Satellite view loads immediately
 
-### 3. Deploy
-1. Upload all files to your web server
-2. Configure Firebase Hosting (optional)
-3. Set up your first admin user
+### Data Source
+- Primary: Google Sheets (public CSV export)
+- Fallback: Sample data if Google Sheets unavailable
+- Real-time: Updates when Google Sheets are updated
 
-## 📁 File Structure
+## 📱 Features for Citizens
 
-```
-Dashboard/
-├── index.html              # Main application file
-├── styles.css              # Custom styling
-├── firebase-config.js      # Firebase configuration
-├── app.js                  # Main application logic
-├── auth-handlers.js        # Authentication functions
-├── project-handlers.js     # Project management
-├── utils.js                # Utility functions
-├── projects_template.csv   # Bulk upload template
-├── Garissa_logo.png        # County logo
-└── README.md               # This file
-```
+### For Citizens
+1. **View Projects**: See all county development projects
+2. **Search & Filter**: Find specific projects easily
+3. **Map View**: See where projects are located
+4. **Provide Feedback**: Share thoughts on any project
+5. **Language Options**: View in English, Swahili, or Somali
+6. **Reports**: View detailed project reports
 
-## 🏗️ Technology Stack
+### For County Officials
+1. **Project Monitoring**: Track all county projects
+2. **Analytics**: Understand project distribution
+3. **Feedback Collection**: Receive citizen feedback
+4. **Reports**: Generate and view project reports
+5. **Export**: Export data for analysis
+
+## 🗺️ Garissa County Coverage
+
+### 11 Sub-Counties
+1. Garissa Township (County Headquarters)
+2. Balambala
+3. Lagdera
+4. Dadaab
+5. Fafi
+6. Ijara
+7. Hulugho
+8. Sankuri
+9. Masalani
+10. Bura East
+11. Bura West
+
+### Departments
+- Water and Sanitation
+- Education
+- Health
+- Agriculture
+- Infrastructure
+- Environment
+- Youth and Sports
+- Trade and Industry
+- Social Services
+- County Executive
+
+## 🔧 Technical Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
 - **Styling**: Tailwind CSS
-- **Backend**: Google Firebase
-- **Database**: Firestore
-- **Authentication**: Firebase Auth
-- **Maps**: Leaflet.js
+- **Maps**: Leaflet.js with Esri World Imagery
 - **Charts**: Chart.js
 - **Icons**: Lucide Icons
-- **AI**: Google Gemini Pro
+- **Data Export**: SheetJS (XLSX)
+- **Storage**: localStorage (for feedback)
 
-## 👥 User Roles
+## 📊 Data Management
 
-### Super Admin
-- Full system access
-- User management
-- All project access
-- System configuration
+### Project Data Structure
+- Project Name
+- Description
+- Status (Completed, Ongoing, Stalled)
+- Department
+- Sub-County
+- Ward
+- Budget (KSh)
+- Expenditure (KSh)
+- Source of Funds
+- Start Date
+- Completion Date
+- Location
+- Coordinates (auto-generated)
 
-### Department Admin
-- Department-specific projects
-- Project CRUD operations
-- Reports and analytics
-- Limited user management
+### Auto-Fix Features
+- Missing project names → Auto-generated
+- Invalid status → Normalized
+- Negative budgets → Corrected
+- Expenditure exceeds budget → Auto-limited
+- Missing departments → Default assigned
+- Invalid coordinates → Auto-geocoded
+- Coordinates out of range → Validated and corrected
 
-## 📊 Data Model
+## 🌐 Deployment
 
-### Projects Collection
-```javascript
-{
-  name: "Project Name",
-  description: "Project Description",
-  subCounty: "Sub-county Name",
-  ward: "Ward Name",
-  location: GeoPoint(lat, lng),
-  department: "Department Name",
-  status: "Ongoing|Completed|Stalled|Planning",
-  startDate: "YYYY-MM-DD",
-  expectedCompletionDate: "YYYY-MM-DD",
-  budget: 1000000,
-  expenditure: 250000,
-  sourceOfFunds: "Funding Source",
-  createdAt: "ISO Date",
-  createdBy: "user@email.com",
-  lastUpdated: "ISO Date",
-  updatedBy: "user@email.com",
-  projectId: "PRJ-xxxxx"
-}
-```
-
-### Users Collection
-```javascript
-{
-  email: "user@email.com",
-  upn: "123456789",
-  department: "Department Name",
-  role: "admin|superadmin",
-  createdAt: "ISO Date",
-  createdBy: "admin@email.com"
-}
-```
-
-## 🗺️ Garissa County Data
-
-### Sub-counties (11)
-- Garissa Township
-- Balambala
-- Lagdera
-- Dadaab
-- Fafi
-- Ijara
-- Hulugho
-- Sankuri
-- Masalani
-- Bura East
-- Bura West
-
-### Departments (10)
-1. Education, ICT & Libraries
-2. Culture, Gender, PWDs, Social Services, Youth & Sports
-3. Finance, Revenue and Economic Planning
-4. Agriculture, Livestock & Pastoral Economy
-5. Water, Environment, Climate change & Natural Resources
-6. County Affairs, Public Service & Administration
-7. Trade, Investment & Enterprise Development
-8. Roads, Transport, Housing & Public Works
-9. Lands, Physical Planning & Urban Development
-10. Health and Sanitation
-
-## 🔧 Configuration
-
-### Firebase Configuration
-Update `firebase-config.js`:
-```javascript
-const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id"
-};
-```
-
-### Gemini API Configuration
-```javascript
-const apiKey = "your-gemini-api-key";
-```
-
-## 📈 Usage Examples
-
-### Adding a New Project
-1. Navigate to Projects section
-2. Click "Add New Project"
-3. Fill in all required fields
-4. Select sub-county and ward (coordinates auto-fill)
-5. Save project
-
-### Bulk Upload
-1. Download `projects_template.csv`
-2. Fill in project data
-3. Upload via "Bulk Upload" button
-4. Confirm upload
-
-### AI Reports
-1. Go to AI Reports section
-2. Enter your query (e.g., "Show me all stalled projects")
-3. Click "Generate AI Report"
-4. View intelligent insights
-
-## 🔒 Security
-
-### Firestore Rules
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-    
-    match /projects/{projectId} {
-      allow read: if request.auth != null && 
-                  (getUserRole() == 'superadmin' || getUserDepartment() == resource.data.department);
-      allow write: if request.auth != null &&
-                    (getUserRole() == 'superadmin' || getUserDepartment() == request.resource.data.department);
-    }
-  }
-}
-```
-
-## 🚀 Deployment
-
-### Firebase Hosting
-```bash
-npm install -g firebase-tools
-firebase login
-firebase init hosting
-firebase deploy
-```
+### GitHub Pages
+1. Push code to GitHub repository
+2. Enable GitHub Pages in repository settings
+3. Select main branch and root folder
+4. Dashboard available at: `https://[username].github.io/[repository]/dashboard.html`
 
 ### Manual Deployment
 1. Upload all files to web server
-2. Ensure HTTPS is enabled
-3. Configure CORS if needed
-4. Set up domain and SSL
+2. Ensure proper file permissions
+3. Access via web browser
 
-## 📱 Browser Support
+## 📧 Contact & Feedback
 
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
+- **Feedback Email**: feedback@garissa.go.ke
+- **Dashboard**: Use "Send Feedback" button in header
+- **Per-Project Feedback**: Click feedback button on any project card
 
-## 🤝 Contributing
+## 📚 Documentation
 
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create Pull Request
+- **User Manual**: See `USER_MANUAL.md` for detailed instructions
+- **Deployment Guide**: See `START_HERE.md`
+- **System Documentation**: See `SYSTEM_DOCUMENTATION.md`
 
-## 📄 License
+## 🎯 Usage Examples
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Finding a Project
+1. Use search box or filters
+2. Click "Search" button
+3. View filtered results in List View or Map View
 
-## 🆘 Support
+### Viewing Reports
+1. Click "Reports" tab
+2. Click on any report card
+3. View report in modal panel
+4. Use filters within report if needed
 
-For support and questions:
-- Email: jmsmuigai@gmail.com
-- Documentation: See SYSTEM_DOCUMENTATION.md
-- User Guide: See USER_MANUAL.md
+### Providing Feedback
+1. Find a project
+2. Click "Send Feedback" button on project card
+3. Fill in name, email, and message
+4. Submit (opens email client)
 
-## 🔄 Updates
+### Switching Languages
+1. Click language buttons (EN/SW/SO) in header
+2. Entire dashboard translates instantly
+3. Preference is saved for future visits
 
-### Version 1.0.0
-- Initial release
-- Core functionality
-- Gmail and UPN authentication
-- GIS mapping
-- AI reporting
-- Bulk upload
-- User management
+## ✅ Features Status
+
+- ✅ Multi-language support (EN/SW/SO)
+- ✅ Interactive report viewing
+- ✅ Per-project feedback system
+- ✅ Search button and filtered views
+- ✅ Enhanced analytics
+- ✅ 3D logo animations
+- ✅ Citizen narrations
+- ✅ Satellite basemap
+- ✅ Auto-fix data validation
+- ✅ Performance optimization
+- ✅ Responsive design
+- ✅ Feedback count display
+
+## 🔄 Recent Updates
+
+### Version 2.1.0 (Latest)
+- Added multi-language support (English, Swahili, Somali)
+- Interactive report viewing panels
+- Per-project feedback system
+- Enhanced search and filtering
+- 3D logo animations
+- Citizen narrations and instructions
+- Improved analytics
+- Better error handling
+- Performance optimizations
+
+### Version 2.0.0
+- Removed login requirement (public access)
+- Google Sheets integration
+- Enhanced filtering system
+- Improved map visualization
+- Report generation
+
+## 📝 License
+
+This project is developed for Garissa County Government.
+
+## 🙏 Acknowledgments
+
+- Garissa County Government
+- All citizens providing feedback
+- Open-source libraries and tools
 
 ---
 
-**Built with ❤️ for Garissa County Government**
+**🌍 Making County Projects Transparent and Accessible to All Citizens**
+
+**Last Updated**: January 2025  
+**Version**: 2.1.0  
+**Status**: ✅ Fully Operational

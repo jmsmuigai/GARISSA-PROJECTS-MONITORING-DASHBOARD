@@ -1,288 +1,112 @@
-# Garissa County Projects Dashboard 🌍
+![Garissa Projects Dashboard](assets/tovutech-banner.svg)
 
-A comprehensive, public-facing, multilingual web dashboard for tracking, viewing, and providing feedback on development projects across Garissa County, Kenya.
+<p align="center">
+  <a href="https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html"><img alt="Status: Live demo" src="https://img.shields.io/badge/status-live%20demo-22C55E?style=for-the-badge"></a>
+  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-Tailwind%20CSS-22D3EE?style=for-the-badge&logo=javascript&logoColor=white">
+  <img alt="Leaflet" src="https://img.shields.io/badge/Leaflet-Chart.js-8B5CF6?style=for-the-badge&logo=leaflet&logoColor=white">
+  <img alt="Languages" src="https://img.shields.io/badge/EN%20·%20SW%20·%20SO-trilingual-EC4899?style=for-the-badge">
+  <a href="https://www.tovutech.com/projects/projects-dashboard/"><img alt="Case study" src="https://img.shields.io/badge/case%20study-tovutech.com-F97316?style=for-the-badge"></a>
+  <a href="https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-0A0F2C?style=for-the-badge&logo=github"></a>
+</p>
 
-## 🎉 Live Dashboard
+## What it is
 
-**🌐 Access the Dashboard**: https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html
+A public, trilingual (English · Kiswahili · Af-Soomaali) web dashboard for viewing and giving feedback on **Garissa County development projects**. It reads the county's project stock-taking sheet (prepared under the KDSP II project stock-taking exercise) and shows each project on a map, in lists, charts and reports — so citizens and county officers can see what is completed, ongoing or stalled, where, and with what budget.
 
-## ✨ Key Features
+It is a static site with no login and no backend, hosted on GitHub Pages.
 
-### 🌍 Multi-Language Support
-- **English** (EN) - Default
-- **Swahili** (SW) - Kiswahili
-- **Somali** (SO) - Soomaali
-- Seamless language switching with persistent preferences
-- Full translations for all UI elements
+## Highlights
 
-### 🗺️ Interactive Geographic Visualization
-- **Satellite Basemap** (Esri World Imagery) - Loads instantly
-- **Street Map** option available
-- Color-coded project markers:
-  - 🟢 Green: Completed projects
-  - 🟡 Yellow: Ongoing projects
-  - 🔴 Red: Stalled projects
-  - 🟣 Purple (Pulsing): Garissa Town projects
-- Automatic geocoding from location data
-- UTM coordinate support
-- Click markers for project details
+- 🌍 **Three languages** – English, Kiswahili and Somali, switchable in the header; the choice is remembered.
+- 🗺️ **Map view** – Leaflet with Esri satellite imagery or street map; markers coloured by status (completed / ongoing / stalled, Garissa Town highlighted). Projects without coordinates are placed at approximate sub-county / ward locations.
+- 🔍 **Search & filters** – text search plus filters for status, sub-county, ward, department, budget range, year and source of funds, with active-filter badges.
+- 📊 **Analytics** – Chart.js charts of projects by status, department, budget range and sub-county, updating with the filters.
+- 📄 **Reports in the browser** – summary, completed, ongoing, stalled, budget and location reports in modal panels.
+- 💬 **Per-project feedback** – feedback form on every project; stored in the visitor's browser and sent through the email client to `feedback@garissa.go.ke`.
+- 📤 **Export** – Excel export of filtered projects (SheetJS); the "PDF" button currently downloads a plain-text summary.
+- 🧹 **Data clean-up on load** – normalises statuses, fixes negative budgets, caps expenditure at budget, fills missing departments and validates coordinates.
 
-### 🔍 Advanced Filtering & Search
-- **Text Search**: Search by project name, description, or location
-- **Status Filter**: Completed, Ongoing, Stalled
-- **Sub-County Filter**: All 11 sub-counties
-- **Ward Filter**: Filter by specific ward
-- **Department Filter**: Filter by implementing department
-- **Budget Range Filter**: Under 1M, 1M-5M, 5M-10M, 10M-50M, Above 50M
-- **Year Filter**: Filter by project year
-- **Source of Funds Filter**: Filter by funding organization
-- **Search Button**: Prominent search button for easy filtering
-- **View Filtered Projects**: Auto-enable button when filters are active
-- **Active Filter Badges**: Visual display of applied filters
+## How it works
 
-### 📊 Comprehensive Analytics
-- **Projects by Status**: Doughnut chart showing distribution
-- **Projects by Department**: Horizontal bar chart
-- **Budget Distribution**: Pie chart by budget ranges
-- **Projects by Sub-County**: Bar chart showing geographic distribution
-- Interactive charts with hover details
-- Real-time updates based on filters
+```mermaid
+flowchart LR
+    A[County project stock-taking<br/>Google Sheet] -->|public CSV export| B[dashboard-app.js<br/>parse + clean-up]
+    C[Built-in sample projects<br/>in dashboard-app.js] -.->|if sheet unavailable| B
+    B --> D[(IndexedDB cache<br/>database.js)]
+    B --> E[Map · list · charts · reports]
+    L[languages.js<br/>EN / SW / SO] --> E
+    E --> F[Excel export · feedback via email]
+```
 
-### 📄 Interactive Report Viewing
-- **No Downloads Required**: View reports directly in panel
-- **Summary Report**: Complete project overview
-- **Completed Projects Report**: All finished projects
-- **Ongoing Projects Report**: Active projects status
-- **Stalled Projects Report**: Projects requiring attention
-- **Budget Analysis Report**: Financial overview
-- **Location Report**: Geographic distribution analysis
-- Reports show in beautiful modal panels
-- Filter reports within the viewing panel
+## Tech stack
 
-### 💬 Per-Project Feedback System
-- **Send Feedback**: Button on every project card
-- **Feedback Count**: Shows number of feedbacks per project
-- **View All Feedback**: See all submitted feedbacks
-- **Feedback Storage**: Saved in browser localStorage
-- **Email Integration**: Opens email client to send to feedback@garissa.go.ke
-- **Feedback Display**: View all feedbacks with project names, dates, and messages
+| Area | Tools |
+|---|---|
+| Frontend | HTML5, CSS3, JavaScript (ES6+), Tailwind CSS (CDN), Lucide icons |
+| Maps & charts | Leaflet 1.9 with Esri World Imagery, Chart.js |
+| Data | Google Sheets CSV export, IndexedDB cache, `localStorage` (preferences and feedback) |
+| Export | SheetJS (XLSX) |
+| Hosting | GitHub Pages; `start-server.py` for local use |
 
-### 🎨 Modern Design & User Experience
-- **3D Logo Animation**: Floating and rotating Garissa County logo
-- **Gradient Headers**: Beautiful red-to-green gradients
-- **Responsive Design**: Works on desktop, tablet, and mobile
-- **Smooth Transitions**: Professional animations throughout
-- **Color-Coded Status**: Easy visual identification
-- **Citizen Narrations**: Helpful instructions and welcome messages
-- **Clean UI**: Modern, professional appearance
+## Getting started
 
-### 📈 Project Management
-- **Project Grouping**: Automatically grouped by status
-- **List View**: All projects displayed in organized cards
-- **Map View**: Geographic visualization
-- **Project Details**: Full information on each project
-- **Export Options**: Excel and PDF export (still available)
+**Open the live dashboard:** https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html
 
-### ⚡ Performance & Reliability
-- **Fast Loading**: Map loads instantly, data loads with timeout
-- **Fallback Data**: Sample projects if Google Sheets unavailable
-- **Auto-Fix Data**: Automatic correction of data issues
-- **Error Handling**: Graceful error handling throughout
-- **Optimized**: Lightweight and fast performance
+**Run locally:**
 
-## 🚀 Quick Start
+```bash
+git clone https://github.com/jmsmuigai/GARISSA-PROJECTS-MONITORING-DASHBOARD.git
+cd GARISSA-PROJECTS-MONITORING-DASHBOARD
+python3 start-server.py          # serves the folder on http://localhost:8000
+# then open http://localhost:8000/dashboard.html
+```
 
-### Access the Dashboard
-Simply visit: https://jmsmuigai.github.io/GARISSA-PROJECTS-MONITORING-DASHBOARD/dashboard.html
+**Use your own data:** make a Google Sheet with the columns in `projects_template.csv`, share it as "anyone with the link can view", and set `GOOGLE_SHEETS_ID` near the top of `dashboard-app.js`. The app tries sheet tabs such as *Summary List for Dashboard*, *Sheet1* and *Projects*.
 
-### No Setup Required!
-- **Public Access**: No login required
-- **Automatic Data Loading**: Loads from Google Sheets automatically
-- **Instant Map**: Satellite view loads immediately
+**Deploy on GitHub Pages:** enable Pages on the `main` branch, root folder; `index.html` redirects to `dashboard.html`.
 
-### Data Source
-- Primary: Google Sheets (public CSV export)
-- Fallback: Sample data if Google Sheets unavailable
-- Real-time: Updates when Google Sheets are updated
+### Project data fields
 
-## 📱 Features for Citizens
+Project name · description · sub-county · ward · latitude / longitude · department · status · start date · expected completion date · budget (KSh) · expenditure (KSh) · source of funds.
 
-### For Citizens
-1. **View Projects**: See all county development projects
-2. **Search & Filter**: Find specific projects easily
-3. **Map View**: See where projects are located
-4. **Provide Feedback**: Share thoughts on any project
-5. **Language Options**: View in English, Swahili, or Somali
-6. **Reports**: View detailed project reports
+### Using the dashboard
 
-### For County Officials
-1. **Project Monitoring**: Track all county projects
-2. **Analytics**: Understand project distribution
-3. **Feedback Collection**: Receive citizen feedback
-4. **Reports**: Generate and view project reports
-5. **Export**: Export data for analysis
+- **Find a project:** type in the search box or set filters → **Search** → switch between List and Map views.
+- **Reports:** open the *Reports* tab and click a report card.
+- **Feedback:** click **Send Feedback** on a project card, fill in the form and submit (opens your email client).
+- **Language:** click EN / SW / SO in the header.
 
-## 🗺️ Garissa County Coverage
+More detail: [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md), [`docs/SYSTEM_DOCUMENTATION.md`](docs/SYSTEM_DOCUMENTATION.md) and the in-app `user-manual.html`.
 
-### 11 Sub-Counties
-1. Garissa Township (County Headquarters)
-2. Balambala
-3. Lagdera
-4. Dadaab
-5. Fafi
-6. Ijara
-7. Hulugho
-8. Sankuri
-9. Masalani
-10. Bura East
-11. Bura West
+## Data & privacy
 
-### Departments
-- Water and Sanitation
-- Education
-- Health
-- Agriculture
-- Infrastructure
-- Environment
-- Youth and Sports
-- Trade and Industry
-- Social Services
-- County Executive
+- **Project data:** the County's project stock-taking workbook (`Garissa County_THE_KDSP_II_PROJECT_STOCK_TAKING.xlsx`, 800+ project rows) and guideline PDFs are included; the live site reads the published Google Sheet. `projects_template.csv` is a column template with sample rows; a set of built-in sample projects in `dashboard-app.js` is shown if the sheet cannot be loaded.
+- Project records are public information about county works; they contain no personal contact details.
+- Citizen feedback stays in the visitor's browser until they send it by email; it is not collected by this repository or any server.
 
-## 🔧 Technical Stack
+## Status & roadmap
 
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Styling**: Tailwind CSS
-- **Maps**: Leaflet.js with Esri World Imagery
-- **Charts**: Chart.js
-- **Icons**: Lucide Icons
-- **Data Export**: SheetJS (XLSX)
-- **Storage**: localStorage (for feedback)
+**Status:** live demo on GitHub Pages. It displays whatever is in the source sheet; figures are only as current and accurate as that sheet.
 
-## 📊 Data Management
+Possible next steps:
+- Store feedback in a proper backend with moderation instead of browser storage.
+- Real PDF reports.
+- Use surveyed project coordinates instead of approximate sub-county locations.
+- Pin library versions (Chart.js, Tailwind) and bundle them for offline use.
 
-### Project Data Structure
-- Project Name
-- Description
-- Status (Completed, Ongoing, Stalled)
-- Department
-- Sub-County
-- Ward
-- Budget (KSh)
-- Expenditure (KSh)
-- Source of Funds
-- Start Date
-- Completion Date
-- Location
-- Coordinates (auto-generated)
+## Security
 
-### Auto-Fix Features
-- Missing project names → Auto-generated
-- Invalid status → Normalized
-- Negative budgets → Corrected
-- Expenditure exceeds budget → Auto-limited
-- Missing departments → Default assigned
-- Invalid coordinates → Auto-geocoded
-- Coordinates out of range → Validated and corrected
+See [SECURITY.md](SECURITY.md). Legacy apps that contained hard-coded admin credentials have been removed.
 
-## 🌐 Deployment
+## Contact
 
-### GitHub Pages
-1. Push code to GitHub repository
-2. Enable GitHub Pages in repository settings
-3. Select main branch and root folder
-4. Dashboard available at: `https://[username].github.io/[repository]/dashboard.html`
-
-### Manual Deployment
-1. Upload all files to web server
-2. Ensure proper file permissions
-3. Access via web browser
-
-## 📧 Contact & Feedback
-
-- **Feedback Email**: feedback@garissa.go.ke
-- **Dashboard**: Use "Send Feedback" button in header
-- **Per-Project Feedback**: Click feedback button on any project card
-
-## 📚 Documentation
-
-- **User Manual**: See `USER_MANUAL.md` for detailed instructions
-- **Deployment Guide**: See `START_HERE.md`
-- **System Documentation**: See `SYSTEM_DOCUMENTATION.md`
-
-## 🎯 Usage Examples
-
-### Finding a Project
-1. Use search box or filters
-2. Click "Search" button
-3. View filtered results in List View or Map View
-
-### Viewing Reports
-1. Click "Reports" tab
-2. Click on any report card
-3. View report in modal panel
-4. Use filters within report if needed
-
-### Providing Feedback
-1. Find a project
-2. Click "Send Feedback" button on project card
-3. Fill in name, email, and message
-4. Submit (opens email client)
-
-### Switching Languages
-1. Click language buttons (EN/SW/SO) in header
-2. Entire dashboard translates instantly
-3. Preference is saved for future visits
-
-## ✅ Features Status
-
-- ✅ Multi-language support (EN/SW/SO)
-- ✅ Interactive report viewing
-- ✅ Per-project feedback system
-- ✅ Search button and filtered views
-- ✅ Enhanced analytics
-- ✅ 3D logo animations
-- ✅ Citizen narrations
-- ✅ Satellite basemap
-- ✅ Auto-fix data validation
-- ✅ Performance optimization
-- ✅ Responsive design
-- ✅ Feedback count display
-
-## 🔄 Recent Updates
-
-### Version 2.1.0 (Latest)
-- Added multi-language support (English, Swahili, Somali)
-- Interactive report viewing panels
-- Per-project feedback system
-- Enhanced search and filtering
-- 3D logo animations
-- Citizen narrations and instructions
-- Improved analytics
-- Better error handling
-- Performance optimizations
-
-### Version 2.0.0
-- Removed login requirement (public access)
-- Google Sheets integration
-- Enhanced filtering system
-- Improved map visualization
-- Report generation
-
-## 📝 License
-
-This project is developed for Garissa County Government.
-
-## 🙏 Acknowledgments
-
-- Garissa County Government
-- All citizens providing feedback
-- Open-source libraries and tools
+- Project feedback: `feedback@garissa.go.ke`
+- Technical: intelligence@tovutech.com
 
 ---
 
-**🌍 Making County Projects Transparent and Accessible to All Citizens**
-
-**Last Updated**: January 2025  
-**Version**: 2.1.0  
-**Status**: ✅ Fully Operational
+<p align="center">
+  <b>Built by James M. Mburu · TovuTech Limited</b><br>
+  <a href="https://www.tovutech.com">https://www.tovutech.com</a> · <a href="mailto:intelligence@tovutech.com">intelligence@tovutech.com</a><br>
+  📖 Case study: <a href="https://www.tovutech.com/projects/projects-dashboard/">tovutech.com/projects/projects-dashboard</a>
+</p>

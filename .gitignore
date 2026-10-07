@@ -1,0 +1,13 @@
+# Secrets and local environment (added by docs refresh)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+serviceAccount*.json
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+venv/
+.venv/
